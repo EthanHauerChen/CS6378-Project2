@@ -11,7 +11,7 @@ public class ConfigParser {
             BufferedReader file = new BufferedReader(new FileReader(filename));
             String line = file.readLine();
             String[] tokens = line.split(" ");
-            String hostname = InetAddress.getLocalHost().getHostName();
+            String hostname = System.getenv("COMPUTERNAME");
             n.hostname = hostname;
 
             //parse first line
