@@ -11,7 +11,8 @@ public class ConfigParser {
             BufferedReader file = new BufferedReader(new FileReader(filename));
             String line = file.readLine();
             String[] tokens = line.split(" ");
-            String hostname = System.getenv("HOSTNAME");
+            String hostname = InetAddress.getLocalHost().getHostName();
+            n.hostname = hostname;
 
             //parse first line
             int numNodes = Integer.parseInt(tokens[0]);
@@ -24,7 +25,6 @@ public class ConfigParser {
                 tokens = line.split(" ");
                 if (hostname.contains(tokens[1])) {
                     n.nodeNumber = Integer.parseInt(tokens[0]);
-                    n.hostname = hostname;
                     n.port = Integer.parseInt(tokens[2]);
 
                 }
