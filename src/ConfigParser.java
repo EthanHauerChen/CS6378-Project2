@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.FileNotFoundException;
 import java.net.InetAddress;
 
@@ -11,7 +12,8 @@ public class ConfigParser {
             BufferedReader file = new BufferedReader(new FileReader(filename));
             String line = file.readLine();
             String[] tokens = line.split(" ");
-            String hostname = System.getenv("COMPUTERNAME");
+            Process process = new ProcessBuilder("hostname").start();
+            String hostname = new BufferedReader(new InputStreamReader(process.getInputStream())).readLine();
             n.hostname = hostname;
 
             //parse first line
