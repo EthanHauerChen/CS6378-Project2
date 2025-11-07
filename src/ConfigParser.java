@@ -3,6 +3,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.net.InetAddress;
+import java.util.Arrays;
 
 public class ConfigParser {
     public static Node parse(String filename) {
@@ -22,6 +23,10 @@ public class ConfigParser {
             //parse next n lines
             for (int i = 0; i < numNodes; i++) {
                 line = file.readLine();
+                if (line.isEmpty() || !Character.isDigit(line.charAt(0))) { //invalid line, go to next line
+                    i--;
+                    continue;
+                }
                 tokens = line.split(" ");
                 if (hostname.contains(tokens[1])) {
                     n.nodeNumber = Integer.parseInt(tokens[0]);
@@ -31,12 +36,16 @@ public class ConfigParser {
             }
             //parse final n lines
             //go to the line containing quorum members of the node
-            for (int i = 0; i < n.nodeNumber; i++) {
-                file.readLine();
+            for (int i = 0; i <= n.nodeNumber; i++) {
+                line = file.readLine();
+                if (line.isEmpty() || !Character.isDigit(line.charAt(0))) { //invalid line, go to next line
+                    i--;
+                    continue;
+                }
             }
-            line = file.readLine();
             tokens = line.split(" ");
             n.qMembers = new int[tokens.length];
+            System.out.println(Arrays.toString(tokens));
             for (int i = 0; i < tokens.length; i++) {
                 n.qMembers[i] = Integer.parseInt(tokens[i]);
             }
