@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,28 +16,84 @@ public class Node {
     int interRequestDelay;
     int csExecutionTime;
     int numRequests;
-    int[] qMembers;
-    ServerSocket serverSocket;
+    Neighbor[] qMembers;
     Connection[] clientSockets;
 
     private boolean listen() {
-        int numConnected = 0;
+    }
+
+    private boolean connect() {
+    }
+
+    /**
+     * 
+     * @return returns 0 upon success, returns -1 if it failed to bind to a neighbor, returns 1 if it failed to accept() that neighbor, returns 2 if timeout
+     */
+    public int establishConnections() {
+        listen();
+        connect();
         try {
-            this.serverSocket = new ServerSocket(this.port);
             long start = System.currentTimeMillis();
-            while (numConnected < clientSockets.length) {
-                Socket client = serverSocket.accept(); 
-                BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                PrintWriter out = new PrintWriter(client.getOutputStream(), true);
-                clientSockets[Integer.parseInt(in.readLine())] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
+                if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
+                    Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
+                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                    clientSockets[in.readInt()] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                }
 
                 if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                    for (int i = 0; i < clientSockets.length; i++) {
-                        clientSockets[i].close();
+                    for (int j = 0; j < clientSockets.length; j++) {
+                        clientSockets[j].close();
+                    }
+                    return 2;
+                }
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        }
+
+        try (ServerSocket serverSocket = new ServerSocket(this.port)) {
+            long start = System.currentTimeMillis();
+            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
+                if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
+                    Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
+                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                    clientSockets[in.readInt()] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                }
+
+                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+                    for (int j = 0; j < clientSockets.length; j++) {
+                        clientSockets[j].close();
+                    }
+                    return 2;
+                }
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        }
+            
+
+            for (int i = 0; i < qMembers.length; i++) {
+                if (this.qMembers[i] < this.nodeNumber) { //if this.nodeNumber > neighbor, listen for connection
+                    Socket client = serverSocket.accept();
+                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                    clientSockets[in.readInt()] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                }
+                else if (this)
+
+                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+                    for (int j = 0; j < clientSockets.length; j++) {
+                        clientSockets[j].close();
                     }
                     return false;
                 }
-                numConnected++;
             }
         }
         catch(IOException e) {
@@ -42,15 +101,6 @@ public class Node {
             return false;
         }
         return true;
-    }
-
-    private boolean connect() {
-        
-    }
-
-    public void establishConnections() {
-        listen();
-        connect();
     }
     
     public void beginProtocol() {

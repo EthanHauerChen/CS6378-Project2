@@ -1,17 +1,35 @@
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 
 public class Connection {
     private Socket socket; //only stored so that close() can be called. should not interface with socket directly, only with in and out
-    BufferedReader in;
-    PrintWriter out;
+    InputStream in;
+    OutputStream out;
 
-    public Connection(Socket s, BufferedReader i, PrintWriter o) {
+    public Connection(Socket s, InputStream i, OutputStream o) {
         socket = s;
         in = i;
         out = o;
+    }
+
+    public int readInt() throws IOException {
+        if (in instanceof ObjectInputStream) return readIntObject();
+        else { //else if this.in is a DataInputStream or some other type of InputStream
+            /** this is meant for increasing reusability/robustness of Connection.readInt() so that it
+             * works for all InputStream types, but that will take to much time, so this will portion will be 
+             * implemented only if necessary
+             */
+            //read 4 bytes or something
+            return readIntObject(); //read integer using DataInputStream or something
+        }
+    }
+    
+    private int readIntObject() throws IOException { 
+        return ((ObjectInputStream)in).readInt();
     }
 
     public void close() throws IOException {

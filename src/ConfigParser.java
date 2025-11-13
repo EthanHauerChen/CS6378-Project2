@@ -20,7 +20,11 @@ public class ConfigParser {
             n.interRequestDelay = Integer.parseInt(tokens[1]);
             n.csExecutionTime = Integer.parseInt(tokens[2]);
             n.numRequests = Integer.parseInt(tokens[3]);
+
             //parse next n lines
+            //temporary arrays that store node info so neighbor info can be extracted later
+            String[] nodenames = new String[numNodes];
+            int[] ports = new int[numNodes];
             for (int i = 0; i < numNodes; i++) {
                 line = file.readLine();
                 if (line.isEmpty() || !Character.isDigit(line.charAt(0))) { //invalid line, go to next line
@@ -33,6 +37,10 @@ public class ConfigParser {
                     n.port = Integer.parseInt(tokens[2]);
 
                 }
+                else { //hostname and port num for node i
+                    nodenames[i] = tokens[1];
+                    ports[i] = Integer.parseInt(tokens[2]);
+                }
             }
             //parse final n lines
             //go to the line containing quorum members of the node
@@ -44,10 +52,11 @@ public class ConfigParser {
                 }
             }
             tokens = line.split(" ");
-            n.qMembers = new int[tokens.length];
+            n.qMembers = new Neighbor[tokens.length];
             System.out.println(Arrays.toString(tokens));
             for (int i = 0; i < tokens.length; i++) {
-                n.qMembers[i] = Integer.parseInt(tokens[i]);
+                int neighborNum = Integer.parseInt(tokens[i]);
+                n.qMembers[i] = new Neighbor(neighborNum, nodenames[neighborNum], ports[neighborNum]);
             }
         } 
         catch (FileNotFoundException e) {
