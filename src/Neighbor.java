@@ -14,6 +14,6 @@ public class Neighbor {
     private String lt() { return "\n\t"; }
     @Override
     public String toString() {
-        return "" + nodeNumber;
+        return "(node: " + nodeNumber + ", hostname: " + hostname + ", port: " + port + ")";
     }
 }
