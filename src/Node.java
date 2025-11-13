@@ -79,19 +79,7 @@ public class Node {
 
 
     public void beginProtocol() {
-        switch(establishConnections()) {
-            case 0:
-                //start protocol, TODO
-                break;
-            case -1:
-                //print error reason
-                break;
-            case 1:
-                //print error reason
-                break;
-            case 2:
-                //print error reason
-        }
+        
     }
 
     private String lt() { return "\n\t"; }
