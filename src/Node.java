@@ -19,19 +19,11 @@ public class Node {
     Neighbor[] qMembers;
     Connection[] clientSockets;
 
-    private boolean listen() {
-    }
-
-    private boolean connect() {
-    }
-
     /**
      * 
      * @return returns 0 upon success, returns -1 if it failed to bind to a neighbor, returns 1 if it failed to accept() that neighbor, returns 2 if timeout
      */
     public int establishConnections() {
-        listen();
-        connect();
         try {
             long start = System.currentTimeMillis();
             for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
@@ -39,7 +31,8 @@ public class Node {
                     Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
                     ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                     ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                    clientSockets[in.readInt()] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                    clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
+                    clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
                 }
 
                 if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
@@ -57,9 +50,9 @@ public class Node {
 
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
             long start = System.currentTimeMillis();
-            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
-                if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
-                    Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
+            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
+                if (this.qMembers[i].nodeNumber < this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
+                    Socket client = serverSocket.accept();
                     ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                     ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                     clientSockets[in.readInt()] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
@@ -75,36 +68,26 @@ public class Node {
         }
         catch (IOException e) {
             e.printStackTrace();
-            return -1;
+            return 1;
         }
-            
-
-            for (int i = 0; i < qMembers.length; i++) {
-                if (this.qMembers[i] < this.nodeNumber) { //if this.nodeNumber > neighbor, listen for connection
-                    Socket client = serverSocket.accept();
-                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                    clientSockets[in.readInt()] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
-                }
-                else if (this)
-
-                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                    for (int j = 0; j < clientSockets.length; j++) {
-                        clientSockets[j].close();
-                    }
-                    return false;
-                }
-            }
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
+        
+        return 0; //success
     }
     
     public void beginProtocol() {
-
+        switch(establishConnections()) {
+            case 0:
+                //start protocol, TODO
+                break;
+            case -1:
+                //print error reason
+                break;
+            case 1:
+                //print error reason
+                break;
+            case 2:
+                //print error reason
+        }
     }
 
     private String lt() { return "\n\t"; }

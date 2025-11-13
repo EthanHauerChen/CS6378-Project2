@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
@@ -27,9 +28,18 @@ public class Connection {
             return readIntObject(); //read integer using DataInputStream or something
         }
     }
-    
     private int readIntObject() throws IOException { 
         return ((ObjectInputStream)in).readInt();
+    }
+
+    public void writeInt(int output) throws IOException {
+        if (out instanceof ObjectOutputStream) ((ObjectOutputStream)out).writeInt(output);
+        else {
+            /**
+             * same deal as else statement in readInt()
+             */
+            ((ObjectOutputStream)out).writeInt(output);
+        }
     }
 
     public void close() throws IOException {
