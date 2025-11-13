@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONFIG_FILE=$1 # argv[1] equivalent
-MAIN_EXECUTABLE="main"
+MAIN_EXECUTABLE="Main"
 PROJECT_DIRECTORY="~/6378/Project2"
 
 # --- SAFETY CHECKS ---
@@ -25,7 +25,7 @@ for line in "${lines[@]}"; do
     hostname=$(echo "$line" | awk '{print $2}')
     if [[ -n "$hostname" ]]; then
         echo "Connecting to $hostname..."
-        ssh "ehc180001@${hostname}.utdallas.edu" "${PROJECT_DIRECTORY}/${MAIN_EXECUTABLE} ${PROJECT_DIRECTORY}/${CONFIG_FILE}" &
+        ssh "ehc180001@${hostname}.utdallas.edu" "cd ${PROJECT_DIRECTORY} && java -cp bin Main ${CONFIG_FILE}" &
     fi
 done
 
