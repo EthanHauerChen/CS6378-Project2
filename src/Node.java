@@ -20,7 +20,6 @@ public class Node {
     Connection[] clientSockets;
 
     /**
-     * 
      * @return returns 0 upon success, returns -1 if it failed to bind to a neighbor, returns 1 if it failed to accept() that neighbor, returns 2 if timeout
      */
     public int establishConnections() {
@@ -33,6 +32,7 @@ public class Node {
                     ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                     clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
                     clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
+                    System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
                 }
 
                 if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
@@ -55,7 +55,9 @@ public class Node {
                     Socket client = serverSocket.accept();
                     ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                     ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                    clientSockets[in.readInt()] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                    int nodenum = in.readInt();
+                    clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                    System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
                 }
 
                 if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
@@ -74,6 +76,8 @@ public class Node {
         return 0; //success
     }
     
+
+
     public void beginProtocol() {
         switch(establishConnections()) {
             case 0:
