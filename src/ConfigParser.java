@@ -53,7 +53,7 @@ public class ConfigParser {
             }
             tokens = line.split(" ");
             n.qMembers = new Neighbor[tokens.length];
-            System.out.println(Arrays.toString(tokens));
+            //System.out.println(Arrays.toString(tokens));
             for (int i = 0; i < tokens.length; i++) {
                 int neighborNum = Integer.parseInt(tokens[i]);
                 n.qMembers[i] = new Neighbor(neighborNum, nodenames[neighborNum], ports[neighborNum]);

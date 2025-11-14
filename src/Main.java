@@ -5,7 +5,7 @@ public class Main {
             return;
         }
         Node n = ConfigParser.parse(args[0]);
-        System.out.println(n.toString());
+        //System.out.println(n.toString());
         n.establishConnections();
         // n.beginProtocol();
     }
