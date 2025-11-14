@@ -16,37 +16,35 @@ public class Node {
     Connection[] clientSockets;
 
     private void listen() {
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
-            if (this.qMembers[i].nodeNumber < this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
-                new Thread(() -> {
-                    try (ServerSocket serverSocket = new ServerSocket(this.port)) {
-                        Socket client = serverSocket.accept();
-                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                        ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                        int nodenum = in.readInt();
-                        clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
-                        System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
-                    }
-                    catch (IOException e) {
-                        System.out.println("failed to connect accept a connection, abort listen()");
-                        return;
-                    }
-                }).start();
-            }
-
-            if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                for (int j = 0; j < clientSockets.length; j++) {
-                    try {
-                        clientSockets[j].close();
-                    }
-                    catch (IOException e) {
-                        System.out.println("failed to close connection");
-                    }
+        try (ServerSocket serverSocket = new ServerSocket(this.port)) {
+            long start = System.currentTimeMillis();
+            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
+                if (this.qMembers[i].nodeNumber < this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
+                    Socket client = serverSocket.accept();
+                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                    int nodenum = in.readInt();
+                    clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                    System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
                 }
-                System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
-                return;
+
+                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+                    for (int j = 0; j < clientSockets.length; j++) {
+                        try {
+                            clientSockets[j].close();
+                        }
+                        catch (IOException e) {
+                            System.out.println("failed to close connection");
+                        }
+                    }
+                    System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
+                    return;
+                }
             }
+        }
+        catch (IOException e) {
+            System.out.println("failed to create socket or accept()");
+            return;
         }
         
         System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
