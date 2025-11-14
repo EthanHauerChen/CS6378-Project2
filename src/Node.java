@@ -1,10 +1,6 @@
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
@@ -19,35 +15,7 @@ public class Node {
     Neighbor[] qMembers;
     Connection[] clientSockets;
 
-    /**
-     * @return returns 0 upon success, returns -1 if it failed to bind to a neighbor, returns 1 if it failed to accept() that neighbor, returns 2 if timeout
-     */
-    public int establishConnections() {
-        try {
-            long start = System.currentTimeMillis();
-            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
-                if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
-                    Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
-                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                    clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
-                    clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
-                    System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
-                }
-
-                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                    for (int j = 0; j < clientSockets.length; j++) {
-                        clientSockets[j].close();
-                    }
-                    return 2;
-                }
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            return -1;
-        }
-
+    private void listen() {
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
             long start = System.currentTimeMillis();
             for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
@@ -64,16 +32,78 @@ public class Node {
                     for (int j = 0; j < clientSockets.length; j++) {
                         clientSockets[j].close();
                     }
-                    return 2;
+                    System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
+                    return;
                 }
             }
         }
         catch (IOException e) {
             e.printStackTrace();
-            return 1;
+            System.out.println("IOException during listen phase");
+            return;
         }
         
-        return 0; //success
+        System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
+    }
+
+    private void bind() {
+        try {
+            long start = System.currentTimeMillis();
+            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
+                if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
+                    Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
+                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                    clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
+                    clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
+                    System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
+                }
+
+                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+                    for (int j = 0; j < clientSockets.length; j++) {
+                        clientSockets[j].close();
+                    }
+                    System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
+                    return;
+                }
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("IOException during listen phase");
+            return;
+        }
+
+        System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
+    }
+
+    /**
+     * @return returns true upon success, false upon failure
+     */
+    public boolean establishConnections() {
+        Thread l = new Thread(() -> listen());
+        Thread b = new Thread(() -> bind());
+        //create listening sockets
+        l.start();
+        // try { //wait some amount of time before having clients attempt to connect
+        //     Thread.sleep(5000); 
+        // }
+        // catch (InterruptedException e) {
+        //     //do nothing, sleep was interrupted which isn't big deal
+        // }
+
+        //bind to the listening sockets of other nodes
+        b.start();
+
+        try {
+            l.join();
+            b.join();
+        }
+        catch (InterruptedException e) {
+            return false;
+        }
+
+        return true;
     }
     
 
