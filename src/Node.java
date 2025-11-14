@@ -16,62 +16,85 @@ public class Node {
     Connection[] clientSockets;
 
     private void listen() {
-        try (ServerSocket serverSocket = new ServerSocket(this.port)) {
-            long start = System.currentTimeMillis();
-            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
-                if (this.qMembers[i].nodeNumber < this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
-                    Socket client = serverSocket.accept();
-                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                    int nodenum = in.readInt();
-                    clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
-                    System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
-                }
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
+            if (this.qMembers[i].nodeNumber < this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
+                new Thread(() -> {
+                    try (ServerSocket serverSocket = new ServerSocket(this.port)) {
+                        Socket client = serverSocket.accept();
+                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                        ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                        int nodenum = in.readInt();
+                        clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                        System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
+                    }
+                    catch (IOException e) {
+                        System.out.println("failed to connect accept a connection, abort listen()");
+                        return;
+                    }
+                }).start();
+            }
 
-                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                    for (int j = 0; j < clientSockets.length; j++) {
+            if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+                for (int j = 0; j < clientSockets.length; j++) {
+                    try {
                         clientSockets[j].close();
                     }
-                    System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
-                    return;
+                    catch (IOException e) {
+                        System.out.println("failed to close connection");
+                    }
                 }
+                System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
+                return;
             }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("IOException during listen phase");
-            return;
         }
         
         System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
     }
 
     private void bind() {
-        try {
-            long start = System.currentTimeMillis();
-            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
-                if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
-                    Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
-                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                    clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
-                    clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
-                    System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
-                }
-
-                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
+            while (true) { //if binding to a socket fails, retry until timeout
+                if (System.currentTimeMillis() - start > 15000) { //timeout
                     for (int j = 0; j < clientSockets.length; j++) {
-                        clientSockets[j].close();
+                            try {
+                                clientSockets[j].close();
+                            }
+                            catch (IOException e) {
+                                System.out.println("Failed to close a connection");
+                            }
+                        }
+                        System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
+                        return;
+                }
+                try {
+                    if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
+                        Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
+                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                        ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                        clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
+                        clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
+                        System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
                     }
-                    System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
-                    return;
+
+                    if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+                        for (int j = 0; j < clientSockets.length; j++) {
+                            clientSockets[j].close();
+                        }
+                        System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
+                        return;
+                    }
+                    break; //exit while loop and repeat for all connections necessary
+                }
+                catch (IOException e) {
+                    //wait a bit and try again
+                    try {
+                        Thread.sleep(500);
+                    }
+                    catch (InterruptedException f) {}
                 }
             }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("IOException during listen phase");
-            return;
         }
 
         System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
@@ -85,12 +108,12 @@ public class Node {
         Thread b = new Thread(() -> bind());
         //create listening sockets
         l.start();
-        // try { //wait some amount of time before having clients attempt to connect
-        //     Thread.sleep(5000); 
-        // }
-        // catch (InterruptedException e) {
-        //     //do nothing, sleep was interrupted which isn't big deal
-        // }
+        try { //wait some amount of time before having clients attempt to connect
+            Thread.sleep(5000); 
+        }
+        catch (InterruptedException e) {
+            //do nothing, sleep was interrupted which isn't big deal
+        }
 
         //bind to the listening sockets of other nodes
         b.start();
