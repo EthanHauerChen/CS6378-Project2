@@ -17,7 +17,7 @@ public class Node {
 
     private void listen() {
         int[] connected = new int[qMembers.length]; //keep track of which nodes were successfully connected
-        for (int i : connected) i = -1;
+        for (int i = 0; i < connected.length; i++) connected[i] = -1;
         int connectedCount = 0;
 
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
