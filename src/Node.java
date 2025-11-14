@@ -16,6 +16,10 @@ public class Node {
     Connection[] clientSockets;
 
     private void listen() {
+        int[] connected = new int[qMembers.length]; //keep track of which nodes were successfully connected
+        for (int i : connected) i = -1;
+        int connectedCount = 0;
+
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
             long start = System.currentTimeMillis();
             for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
@@ -24,6 +28,8 @@ public class Node {
                     ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                     ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                     int nodenum = in.readInt();
+                    connected[connectedCount] = nodenum;
+                    connectedCount++;
                     clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
                     System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
                 }
@@ -48,7 +54,7 @@ public class Node {
             return;
         }
         
-        System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
+        System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients: " + Arrays.toString(connected));
     }
 
     private void bind() {
