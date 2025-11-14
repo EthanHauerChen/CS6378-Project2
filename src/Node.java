@@ -43,6 +43,7 @@ public class Node {
             }
         }
         catch (IOException e) {
+            e.printStackTrace();
             System.out.println("failed to create socket or accept()");
             return;
         }
@@ -104,6 +105,7 @@ public class Node {
     public boolean establishConnections() {
         Thread l = new Thread(() -> listen());
         Thread b = new Thread(() -> bind());
+
         //create listening sockets
         l.start();
         try { //wait some amount of time before having clients attempt to connect
