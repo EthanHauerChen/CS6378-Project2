@@ -15,6 +15,18 @@ public class Node {
     Neighbor[] qMembers;
     Connection[] clientSockets;
 
+    private void closeConnections() {
+        for (Connection c : this.clientSockets) {
+            try {
+                if (c != null)
+                    c.close();
+            }
+            catch(IOException e) {
+                //do nothing, failure to close is no big deal
+            }
+        }
+    }
+
     private void listen() {
         int[] connected = new int[qMembers.length]; //keep track of which nodes were successfully connected
         for (int i = 0; i < connected.length; i++) connected[i] = -1;
@@ -35,14 +47,7 @@ public class Node {
                 }
 
                 if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                    for (int j = 0; j < clientSockets.length; j++) {
-                        try {
-                            clientSockets[j].close();
-                        }
-                        catch (IOException e) {
-                            System.out.println("failed to close connection");
-                        }
-                    }
+                    closeConnections();
                     System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
                     return;
                 }
@@ -51,6 +56,7 @@ public class Node {
         catch (IOException e) {
             e.printStackTrace();
             System.out.println("failed to create socket or accept()");
+            closeConnections();
             return;
         }
         
@@ -62,16 +68,9 @@ public class Node {
         for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
             while (true) { //if binding to a socket fails, retry until timeout
                 if (System.currentTimeMillis() - start > 15000) { //timeout
-                    for (int j = 0; j < clientSockets.length; j++) {
-                            try {
-                                clientSockets[j].close();
-                            }
-                            catch (IOException e) {
-                                System.out.println("Failed to close a connection");
-                            }
-                        }
-                        System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
-                        return;
+                    closeConnections();
+                    System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
+                    return;
                 }
                 try {
                     if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
