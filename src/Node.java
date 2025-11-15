@@ -83,6 +83,9 @@ public class Node {
                     return;
                 }
             }
+
+            //join all threads
+            for (Thread t : accepts) t.join();
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -90,10 +93,9 @@ public class Node {
             closeConnections();
             return;
         }
-        try {
-            for (Thread t : accepts) t.join();
+        catch (InterruptedException e) {
+            System.out.println("Unable to join a thread");
         }
-        catch (InterruptedException e) { System.out.println("Unable to join a thread"); }
         
         System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients: " + Arrays.toString(connectedNodes));
     }
