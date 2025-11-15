@@ -15,13 +15,14 @@ public class Node {
     Neighbor[] qMembers;
     Connection[] clientSockets;
 
-    public Node(String h, int p, int n, int i, int c, int numRequests, Neighbor[] q) {
-        this.hostname = h;
-        this.nodeNumber = n;
-        this.interRequestDelay = i;
-        this.csExecutionTime = c;
+    public Node(String hostname, int port, int nodenum, int interRequestDelay, int csExecutionTime, int numRequests, Neighbor[] qMembers) {
+        this.hostname = hostname;
+        this.port = port;
+        this.nodeNumber = nodenum;
+        this.interRequestDelay = interRequestDelay;
+        this.csExecutionTime = csExecutionTime;
         this.numRequests = numRequests;
-        this.qMembers = q;
+        this.qMembers = qMembers;
         clientSockets = new Connection[this.qMembers.length];
     }
 
@@ -37,24 +38,44 @@ public class Node {
         }
     }
 
+    private int numNeighborsSmaller() { //returns number of neighors with smaller node number than this
+        int numSmaller = 0;
+        for (Neighbor n : this.qMembers) {
+            if (n.nodeNumber < this.nodeNumber) numSmaller++;
+        }
+
+        return numSmaller;
+    }
+    private int numNeighborsLarger() { //see above
+        return this.qMembers.length - numNeighborsSmaller() - 1; //-1 because each quorum also includes itself 
+    }
+
     private void listen() {
-        int[] connected = new int[qMembers.length]; //keep track of which nodes were successfully connected
-        for (int i = 0; i < connected.length; i++) connected[i] = -1;
-        int connectedCount = 0;
+        int numSmaller = numNeighborsSmaller();
+        Thread[] accepts = new Thread[numSmaller];
+        int[] connectedNodes = new int[numSmaller]; //node numbers of the accepted clients
+        for (int i = 0; i < numSmaller; i++) connectedNodes[i] = -1;
 
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
             long start = System.currentTimeMillis();
-            for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
-                if (this.qMembers[i].nodeNumber < this.nodeNumber) { //if this.nodeNumber > neighbor, accept socket
-                    Socket client = serverSocket.accept();
-                    ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                    ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
-                    int nodenum = in.readInt();
-                    connected[connectedCount] = nodenum;
-                    connectedCount++;
-                    clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
-                    System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
-                }
+            for (int i = 0; i < numSmaller; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
+                final int iCopy = i;
+                accepts[i] = new Thread(() -> {
+                    try {
+                        Socket client = serverSocket.accept();
+                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+                        ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                        int nodenum = in.readInt();
+                        connectedNodes[iCopy] = nodenum;
+                        clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                        System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
+                    }
+                    catch (IOException e) {
+                        e.printStackTrace();
+                        System.out.println("Failed to accept a client");
+                    }
+                });
+                accepts[i].start();
 
                 if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
                     closeConnections();
@@ -69,8 +90,12 @@ public class Node {
             closeConnections();
             return;
         }
+        try {
+            for (Thread t : accepts) t.join();
+        }
+        catch (InterruptedException e) { System.out.println("Unable to join a thread"); }
         
-        System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients: " + Arrays.toString(connected));
+        System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients: " + Arrays.toString(connectedNodes));
     }
 
     private void bind() {
