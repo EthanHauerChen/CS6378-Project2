@@ -58,6 +58,7 @@ public class Node {
         for (int i = 0; i < numSmaller; i++) connectedNodes[i] = -1;
 
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
+            serverSocket.setReuseAddress(true); //be able to use socket even if currently in use
             long start = System.currentTimeMillis();
             for (int i = 0; i < numSmaller; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
                 final int iCopy = i;
