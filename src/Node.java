@@ -43,7 +43,7 @@ public class Node {
         for (Neighbor n : this.qMembers) {
             if (n.nodeNumber < this.nodeNumber) numSmaller++;
         }
-        System.out.println("node " + this.nodeNumber + " has " + numSmaller + " neighbors with larger node number");
+        System.out.println("node " + this.nodeNumber + " has " + numSmaller + " neighbors with smaller node number");
         return numSmaller;
     }
     private int numNeighborsLarger() { //see above
@@ -70,6 +70,12 @@ public class Node {
                         connectedNodes[iCopy] = nodenum;
                         clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
                         System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
+
+                        if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
+                            closeConnections();
+                            System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
+                            return;
+                        }
                     }
                     catch (IOException e) {
                         e.printStackTrace();
@@ -77,12 +83,6 @@ public class Node {
                     }
                 });
                 accepts[i].start();
-
-                if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                    closeConnections();
-                    System.out.println("Node " + this.nodeNumber + ": Timeout during listening phase");
-                    return;
-                }
             }
 
             //join all threads
