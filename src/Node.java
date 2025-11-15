@@ -43,11 +43,9 @@ public class Node {
         for (Neighbor n : this.qMembers) {
             if (n.nodeNumber < this.nodeNumber) numSmaller++;
         }
-        System.out.println("node " + this.nodeNumber + " has " + numSmaller + " neighbors with smaller node number");
         return numSmaller;
     }
     private int numNeighborsLarger() { //see above
-        System.out.println("node " + this.nodeNumber + " has " + (this.qMembers.length - numNeighborsSmaller() - 1) + " neighbors with larger node number");
         return this.qMembers.length - numNeighborsSmaller() - 1; //-1 because each quorum also includes itself 
     }
 
@@ -65,6 +63,7 @@ public class Node {
                 accepts[i] = new Thread(() -> {
                     try {
                         Socket client = serverSocket.accept();
+                        System.out.println("node " + this.nodeNumber + " accepted");
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         int nodenum = in.readInt();
