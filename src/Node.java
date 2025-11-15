@@ -15,6 +15,16 @@ public class Node {
     Neighbor[] qMembers;
     Connection[] clientSockets;
 
+    public Node(String h, int p, int n, int i, int c, int numRequests, Neighbor[] q) {
+        this.hostname = h;
+        this.nodeNumber = n;
+        this.interRequestDelay = i;
+        this.csExecutionTime = c;
+        this.numRequests = numRequests;
+        this.qMembers = q;
+        clientSockets = new Connection[this.qMembers.length];
+    }
+
     private void closeConnections() {
         for (int i = 0; i < clientSockets.length; i++) {
             try {
