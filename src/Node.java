@@ -16,10 +16,10 @@ public class Node {
     Connection[] clientSockets;
 
     private void closeConnections() {
-        for (Connection c : this.clientSockets) {
+        for (int i = 0; i < clientSockets.length; i++) {
             try {
-                if (c != null)
-                    c.close();
+                if (clientSockets[i] != null)
+                    clientSockets[i].close();
             }
             catch(IOException e) {
                 //do nothing, failure to close is no big deal
