@@ -59,11 +59,11 @@ public class Node {
             serverSocket.setReuseAddress(true); //be able to use socket even if currently in use
             long start = System.currentTimeMillis();
             for (int i = 0; i < numSmaller; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
+                Socket client = serverSocket.accept();
+                System.out.println("node " + this.nodeNumber + " accepted");
                 final int iCopy = i;
                 accepts[i] = new Thread(() -> {
                     try {
-                        Socket client = serverSocket.accept();
-                        System.out.println("node " + this.nodeNumber + " accepted");
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         int nodenum = in.readInt();
