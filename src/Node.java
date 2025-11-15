@@ -64,8 +64,8 @@ public class Node {
                     try {
                         Socket client = serverSocket.accept();
                         System.out.println("node " + this.nodeNumber + " accepted");
-                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         int nodenum = in.readInt();
                         connectedNodes[iCopy] = nodenum;
                         clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
@@ -113,8 +113,8 @@ public class Node {
                 try {
                     if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
                         Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
-                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                        ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
                         clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
                         System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
