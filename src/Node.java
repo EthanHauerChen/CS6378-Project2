@@ -122,7 +122,7 @@ public class Node {
 
                     if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
                         for (int j = 0; j < clientSockets.length; j++) {
-                            clientSockets[j].close();
+                            closeConnections();
                         }
                         System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
                         return;
@@ -152,7 +152,7 @@ public class Node {
         //create listening sockets
         l.start();
         try { //wait some amount of time before having clients attempt to connect
-            Thread.sleep(5000); 
+            Thread.sleep(10000); 
         }
         catch (InterruptedException e) {
             //do nothing, sleep was interrupted which isn't big deal
