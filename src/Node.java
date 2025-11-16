@@ -57,6 +57,7 @@ public class Node {
         for (int i = 0; i < numSmaller; i++) connectedNodes[i] = -1;
 
         try (ServerSocket serverSocket = new ServerSocket(this.port)) {
+            System.out.println("Node " + this.nodeNumber + " ready and listening");
             serverSocket.setReuseAddress(true); //be able to use socket even if currently in use
             long start = System.currentTimeMillis();
             for (int i = 0; i < numSmaller; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
@@ -145,7 +146,7 @@ public class Node {
     /**
      * @return returns true upon success, false upon failure
      */
-    public boolean establishConnections() {
+    public void establishConnections() {
         Thread l = new Thread(() -> listen());
         Thread b = new Thread(() -> bind());
 
@@ -166,10 +167,12 @@ public class Node {
             b.join();
         }
         catch (InterruptedException e) {
-            return false;
+            e.printStackTrace();
+            return;
         }
 
-        return true;
+        System.out.println("Node " + this.nodeNumber + " establishConnections terminated");
+        return;
     }
     
 
