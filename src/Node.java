@@ -4,6 +4,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class Node {
     String hostname;
@@ -12,8 +13,7 @@ public class Node {
     int interRequestDelay;
     int csExecutionTime;
     int numRequests;
-    Neighbor[] qMembers;
-    Connection[] clientSockets;
+    HashMap<Integer, Neighbor> qMembers;
 
     public Node(String hostname, int port, int nodenum, int interRequestDelay, int csExecutionTime, int numRequests, Neighbor[] qMembers) {
         this.hostname = hostname;
@@ -22,15 +22,20 @@ public class Node {
         this.interRequestDelay = interRequestDelay;
         this.csExecutionTime = csExecutionTime;
         this.numRequests = numRequests;
-        this.qMembers = qMembers;
-        clientSockets = new Connection[this.qMembers.length];
+        addQMembers(qMembers);
+    }
+    private void addQMembers (Neighbor[] members) {
+        qMembers = new HashMap<Integer, Neighbor>(members.length);
+        for (Neighbor n : members) {
+            this.qMembers.put(n.nodeNumber, n);
+        }
     }
 
     private void closeConnections() {
-        for (int i = 0; i < clientSockets.length; i++) {
+        for (Neighbor n : qMembers.values()) {
             try {
-                if (clientSockets[i] != null)
-                    clientSockets[i].close();
+                if (n.connection != null)
+                    n.connection.close();
             }
             catch(IOException e) {
                 //do nothing, failure to close is no big deal
@@ -40,7 +45,7 @@ public class Node {
 
     private int numNeighborsSmaller() { //returns number of neighors with smaller node number than this
         int numSmaller = 0;
-        for (Neighbor n : this.qMembers) {
+        for (Neighbor n : this.qMembers.values()) {
             if (n.nodeNumber < this.nodeNumber) numSmaller++;
         }
         return numSmaller;
@@ -63,7 +68,7 @@ public class Node {
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         int nodenum = in.readInt();
                         connectedNodes[iCopy] = nodenum;
-                        clientSockets[nodenum] = new Connection(client, in, out); //clientSockets[node_number], connecting client must send their node number once accepted
+                        qMembers.get(nodenum).addConnection(new Connection(client, in, out)); //connecting client must send their node number once accepted
                         System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
 
                         if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
@@ -98,7 +103,7 @@ public class Node {
 
     private void bind() {
         long start = System.currentTimeMillis();
-        for (int i = 0; i < qMembers.length; i++) { //bind to neighbors with larger IDs
+        for (int i = 0; i < qMembers.size(); i++) { //bind to neighbors with larger IDs
             while (true) { //if binding to a socket fails, retry until timeout
                 if (System.currentTimeMillis() - start > 15000) { //timeout
                     closeConnections();
@@ -106,20 +111,19 @@ public class Node {
                     return;
                 }
                 try {
-                    if (this.qMembers[i].nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
-                        Socket client = new Socket(this.qMembers[i].hostname, this.qMembers[i].port);
+                    Neighbor neighborI = this.qMembers.get(i);
+                    if (neighborI.nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
+                        Socket client = new Socket(neighborI.hostname, neighborI.port);
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                        clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
-                        clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
-                        clientSockets[i].out.flush();
-                        System.out.println("Node " + this.nodeNumber + " wrote " + this.nodeNumber + " to " + this.qMembers[i].nodeNumber);
+                        neighborI.addConnection(new Connection(client, in, out));
+                        neighborI.connection.writeInt(this.nodeNumber); //once connected, send node_number as initial message
+                        neighborI.connection.flush();
+                        System.out.println("Node " + this.nodeNumber + " wrote " + this.nodeNumber + " to " + neighborI.nodeNumber);
                     }
 
                     if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
-                        for (int j = 0; j < clientSockets.length; j++) {
-                            closeConnections();
-                        }
+                        closeConnections();
                         System.out.println("Node " + this.nodeNumber + ": Timeout during binding phase");
                         return;
                     }
