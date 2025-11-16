@@ -8,5 +8,6 @@ public class Main {
         //System.out.println(n.toString());
         n.establishConnections();
         // n.beginProtocol();
+        n.closeConnections();
     }
 }

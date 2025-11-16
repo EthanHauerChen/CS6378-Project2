@@ -31,7 +31,7 @@ public class Node {
         }
     }
 
-    private void closeConnections() {
+    public void closeConnections() {
         for (Neighbor n : qMembers.values()) {
             try {
                 if (n.connection != null)
