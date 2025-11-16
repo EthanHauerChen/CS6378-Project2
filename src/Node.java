@@ -14,6 +14,7 @@ public class Node {
     int csExecutionTime;
     int numRequests;
     HashMap<Integer, Neighbor> qMembers;
+    private int clock;
 
     public Node(String hostname, int port, int nodenum, int interRequestDelay, int csExecutionTime, int numRequests, Neighbor[] qMembers) {
         this.hostname = hostname;
@@ -23,6 +24,7 @@ public class Node {
         this.csExecutionTime = csExecutionTime;
         this.numRequests = numRequests;
         addQMembers(qMembers);
+        clock = 0;
     }
     private void addQMembers (Neighbor[] members) {
         qMembers = new HashMap<Integer, Neighbor>(members.length);
@@ -143,9 +145,6 @@ public class Node {
         System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
     }
 
-    /**
-     * @return returns true upon success, false upon failure
-     */
     public void establishConnections() {
         Thread l = new Thread(() -> listen());
         Thread b = new Thread(() -> bind());
@@ -175,10 +174,59 @@ public class Node {
         return;
     }
     
+    private void incrementClock() { clock++; }
 
+    private void csEnter() {
+        for (Neighbor n : qMembers.values()) {
+        sendMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
+
+        //enter CS if at top of request queue
+        while (requestQueue.peek().nodeNumber != this.nodeNumber) { //retry CS entry every .1 seconds if necessary
+            try {
+                Thread.sleep(100); 
+            }
+            catch (InterruptedException e) {}
+        }
+
+        //enter CS
+        return;
+    }
+
+    private void csLeave() {
+        sendMessage(MessageType.RELEASE); //send message informing other processes that CS is no longer in use
+        return;
+    }
+
+    private sendMessage(MessageType type) {}
+    private sendMessage(MessageType type, int clock) {}
 
     public void beginProtocol() {
-        
+        /** Thread for requesting critical section from quorum members*/
+        new Thread(() -> {
+            for (int i = 0; i < this.numRequests; i++) {
+                csEnter(); //blocking request for critical section
+                while (true) {
+                    try {
+                        Thread.sleep(this.csExecutionTime);
+                        break;
+                    }
+                    catch (InterruptedException e) {
+                        System.out.println("cs execution interrupted, try again");
+                    }
+                }
+                csLeave(); //inform other nodes that critical section is available
+
+                try {
+                    Thread.sleep(this.interRequestDelay);
+                }
+                catch (InterruptedException e) {
+                    System.out.println("interRequestDelay interrupted, proceeding to enter cs again if num requests made has not exceeded maximum");
+                }
+            }
+        }).start();
+
+        /** Thread for granting critical section requests to membership set*/
+
     }
 
     private String lt() { return "\n\t"; }
