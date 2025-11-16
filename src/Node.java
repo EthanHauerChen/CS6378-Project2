@@ -189,7 +189,7 @@ public class Node {
         "interRequestDelay: " + interRequestDelay + lt() +
         "csExecutionTime: " + csExecutionTime + lt() +
         "numRequests: " + numRequests + lt() +
-        "quorum members: " + Arrays.toString(qMembers) + 
+        "quorum members: " + qMembers.toString() + 
         "\n}";
     }
 }
