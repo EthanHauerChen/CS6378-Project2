@@ -116,7 +116,7 @@ public class Node {
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
-                        clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
+                        out.writeInt(this.nodeNumber); //once connected, send node_number as initial message
                         System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
                     }
 
