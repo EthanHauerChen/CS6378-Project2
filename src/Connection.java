@@ -17,6 +17,10 @@ public class Connection {
         out = o;
     }
 
+    public void flush() throws IOException {
+        out.flush();
+    }
+
     public int readInt() throws IOException {
         if (in instanceof ObjectInputStream) return readIntObject();
         else { //else if this.in is a DataInputStream or some other type of InputStream
