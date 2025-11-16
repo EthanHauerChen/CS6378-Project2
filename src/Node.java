@@ -103,7 +103,7 @@ public class Node {
 
     private void bind() {
         long start = System.currentTimeMillis();
-        for (int i = 0; i < qMembers.size(); i++) { //bind to neighbors with larger IDs
+        for (Neighbor neighbor : this.qMembers.values()) { //bind to neighbors with larger IDs
             while (true) { //if binding to a socket fails, retry until timeout
                 if (System.currentTimeMillis() - start > 15000) { //timeout
                     closeConnections();
@@ -111,15 +111,14 @@ public class Node {
                     return;
                 }
                 try {
-                    Neighbor neighborI = this.qMembers.get(i);
-                    if (neighborI.nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
-                        Socket client = new Socket(neighborI.hostname, neighborI.port);
+                    if (neighbor.nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
+                        Socket client = new Socket(neighbor.hostname, neighbor.port);
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                        neighborI.addConnection(new Connection(client, in, out));
-                        neighborI.connection.writeInt(this.nodeNumber); //once connected, send node_number as initial message
-                        neighborI.connection.flush();
-                        System.out.println("Node " + this.nodeNumber + " wrote " + this.nodeNumber + " to " + neighborI.nodeNumber);
+                        neighbor.addConnection(new Connection(client, in, out));
+                        neighbor.connection.writeInt(this.nodeNumber); //once connected, send node_number as initial message
+                        neighbor.connection.flush();
+                        System.out.println("Node " + this.nodeNumber + " wrote " + this.nodeNumber + " to " + neighbor.nodeNumber);
                     }
 
                     if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
