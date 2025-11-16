@@ -45,10 +45,6 @@ public class Node {
         }
         return numSmaller;
     }
-    private int numNeighborsLarger() { //see above
-        return this.qMembers.length - numNeighborsSmaller() - 1; //-1 because each quorum also includes itself 
-    }
-
     private void listen() {
         int numSmaller = numNeighborsSmaller();
         Thread[] accepts = new Thread[numSmaller];
