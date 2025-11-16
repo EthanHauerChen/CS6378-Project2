@@ -56,7 +56,6 @@ public class Node {
             long start = System.currentTimeMillis();
             for (int i = 0; i < numSmaller; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
                 Socket client = serverSocket.accept();
-                System.out.println("node " + this.nodeNumber + " accepted");
                 final int iCopy = i;
                 accepts[i] = new Thread(() -> {
                     try {
@@ -114,7 +113,7 @@ public class Node {
                         clientSockets[i] = new Connection(client, in, out); //clientSockets[node_number]
                         clientSockets[i].writeInt(this.nodeNumber); //once connected, send node_number as initial message
                         clientSockets[i].out.flush();
-                        System.out.println("Node " + this.nodeNumber + "wrote " + this.nodeNumber + " to " + i);
+                        System.out.println("Node " + this.nodeNumber + " wrote " + this.nodeNumber + " to " + this.qMembers[i].nodeNumber);
                     }
 
                     if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
@@ -130,6 +129,7 @@ public class Node {
                     //wait a bit and try again
                     try {
                         Thread.sleep(500);
+                        System.out.println("Node " + this.nodeNumber + " retry");
                     }
                     catch (InterruptedException f) {}
                 }
@@ -149,7 +149,7 @@ public class Node {
         //create listening sockets
         l.start();
         try { //wait some amount of time before having clients attempt to connect
-            Thread.sleep(10000); 
+            Thread.sleep(1000); 
         }
         catch (InterruptedException e) {
             //do nothing, sleep was interrupted which isn't big deal
