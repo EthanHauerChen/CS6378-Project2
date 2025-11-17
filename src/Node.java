@@ -201,13 +201,22 @@ public class Node {
     private void csEnter() {
         sendMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
 
-        //enter CS if at top of request queue
-        while (requestQueue.peek().nodeNumber != this.nodeNumber) { //retry CS entry every .1 seconds if necessary
-            try {
-                Thread.sleep(100); 
+        //enter CS if grant from all qMembers
+        boolean canEnter = true;
+        do {
+            canEnter = true;
+            for (Neighbor n : qMembers.values()) {
+                if (!n.granted) {
+                    canEnter = false;
+                    try { //retry after waiting .1 seconds
+                        Thread.sleep(100); 
+                    }
+                    catch (InterruptedException e) {}
+                    break;
+                }
             }
-            catch (InterruptedException e) {}
         }
+        while (!canEnter);
 
         //enter CS
     }
@@ -273,9 +282,10 @@ public class Node {
             int numExited = 0; //number of EXIT messages received
             while (numExited < qMembers.size()) {
                 for (Neighbor n : this.qMembers.values()) {
+                    if (n.nodeNumber == this.nodeNumber) continue;
                     Message msg = readMessage();
-                    if (msg.msgType == MessageType.REQUEST) {
-                        requestQueue.add(new Request(numExited, numExited))
+                    if (msg != null && msg.msgType == MessageType.REQUEST) {
+                        requestQueue.add(new Request(n.nodeNumber, msg.clock));
                     }
                 }
             }
