@@ -36,6 +36,12 @@ public class Node {
             else if (this.nodeNumber < temp.nodeNumber) return -1;
             else return 1;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            Request temp = (Request)o;
+            return this.nodeNumber == temp.nodeNumber; //impossible for multiple requests from same node at the same time since csEnter is blocking
+        }
     }
 
     public Node(String hostname, int port, int nodenum, int interRequestDelay, int csExecutionTime, int numRequests, Neighbor[] qMembers) {
@@ -198,26 +204,25 @@ public class Node {
     
     private void incrementClock() { clock++; }
 
+    private boolean canEnter() {
+        for (Neighbor n : this.qMembers.values()) {
+            if (!n.granted) return false;
+        }
+        return true;
+    }
+
     private void csEnter() {
         sendMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
 
         //enter CS if grant from all qMembers
         boolean canEnter = true;
-        do {
-            canEnter = true;
-            for (Neighbor n : qMembers.values()) {
-                if (!n.granted) {
-                    canEnter = false;
-                    try { //retry after waiting .1 seconds
-                        Thread.sleep(100); 
-                    }
-                    catch (InterruptedException e) {}
-                    break;
-                }
+        while(!canEnter()) {
+            try { //retry after waiting .1 seconds
+                Thread.sleep(100); 
             }
+            catch (InterruptedException e) {}
         }
-        while (!canEnter);
-
+    
         //enter CS
     }
 
@@ -284,8 +289,18 @@ public class Node {
                 for (Neighbor n : this.qMembers.values()) {
                     if (n.nodeNumber == this.nodeNumber) continue;
                     Message msg = readMessage();
-                    if (msg != null && msg.msgType == MessageType.REQUEST) {
-                        requestQueue.add(new Request(n.nodeNumber, msg.clock));
+                    if (msg == null) continue;
+                    switch (msg.msgType) {
+                        case REQUEST:
+                            requestQueue.add(new Request(n.nodeNumber, msg.clock));
+                            if (requestQueue.peek().nodeNumber == n.nodeNumber) sendMessage(MessageType.GRANT);
+                            break;
+                        case GRANT:
+                            n.granted = true;
+                            break;
+                        case RELEASE:
+                            requestQueue.remove(new Request(n.nodeNumber, -1));
+                            break;
                     }
                 }
             }
