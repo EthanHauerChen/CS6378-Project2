@@ -5,11 +5,13 @@ public class Neighbor {
     String hostname;
     int port;
     Connection connection;
+    boolean granted;
 
     public Neighbor(int n, String h, int p) {
         nodeNumber = n;
         hostname = h;
         port = p;
+        granted = false;
     }
 
     public void addConnection(Connection c) {
