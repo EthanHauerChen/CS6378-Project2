@@ -4,5 +4,6 @@ public enum MessageType {
     RELEASE,
     INQUIRE,
     YIELD,
-    FAILED
+    FAILED,
+    EXIT
 }

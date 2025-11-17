@@ -44,6 +44,28 @@ public class Connection {
              */
             ((ObjectOutputStream)out).writeInt(output);
         }
+        out.flush();
+    }
+
+    public boolean writeMessage(Message msg) {
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() - start < 10000) {
+            try {
+                ((ObjectOutputStream)out).writeObject(msg);
+                this.flush();
+                return true;
+            }
+            catch (IOException e) {
+                System.out.println("Failed to write message, try again");
+                try {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException f) {}
+            }
+        }
+
+        System.out.println("Failed to write message");
+        return false;
     }
 
     public void close() throws IOException {

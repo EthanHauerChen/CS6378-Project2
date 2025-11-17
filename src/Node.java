@@ -4,7 +4,9 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.PriorityQueue;
 
 public class Node {
     String hostname;
@@ -14,7 +16,27 @@ public class Node {
     int csExecutionTime;
     int numRequests;
     HashMap<Integer, Neighbor> qMembers;
+    PriorityQueue<Request> requestQueue;
     private int clock;
+
+    private class Request implements Comparable {
+        int nodeNumber;
+        int timestamp;
+        
+        public Request(int nodenum, int timestamp) {
+            this.nodeNumber = nodenum;
+            this.timestamp = timestamp;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            Request temp = (Request)o;
+            if (this.timestamp < temp.timestamp) return -1;
+            else if (this.timestamp > temp.timestamp) return 1;
+            else if (this.nodeNumber < temp.nodeNumber) return -1;
+            else return 1;
+        }
+    }
 
     public Node(String hostname, int port, int nodenum, int interRequestDelay, int csExecutionTime, int numRequests, Neighbor[] qMembers) {
         this.hostname = hostname;
@@ -177,7 +199,6 @@ public class Node {
     private void incrementClock() { clock++; }
 
     private void csEnter() {
-        for (Neighbor n : qMembers.values()) {
         sendMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
 
         //enter CS if at top of request queue
@@ -189,7 +210,6 @@ public class Node {
         }
 
         //enter CS
-        return;
     }
 
     private void csLeave() {
@@ -197,12 +217,34 @@ public class Node {
         return;
     }
 
-    private sendMessage(MessageType type) {}
-    private sendMessage(MessageType type, int clock) {}
+    private void sendMessage(MessageType type) {
+        sendMessage(type, -1);
+    }
+    private void sendMessage(MessageType type, int clock) {
+        if (type == MessageType.REQUEST || type == MessageType.RELEASE) {
+            for (Neighbor n : this.qMembers.values()) {
+                if (n.nodeNumber == this.nodeNumber) continue;
+                if (!n.connection.writeMessage(new Message(type, clock))) {
+                    closeConnections();
+                    System.out.println(this.nodeNumber + " failed to write message, abort protocol");
+                    System.exit(-1);
+                }
+            }
+        }
+    }
+    private void sendMessage(MessageType type, int clock, int dest) {
+        if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock))) {
+            closeConnections();
+            System.out.println(this.nodeNumber + " failed to write message, abort protocol");
+            System.exit(-1);
+        }
+    }
+
+    private boolean readMessage() {}
 
     public void beginProtocol() {
         /** Thread for requesting critical section from quorum members*/
-        new Thread(() -> {
+        Thread cs = new Thread(() -> {
             for (int i = 0; i < this.numRequests; i++) {
                 csEnter(); //blocking request for critical section
                 while (true) {
@@ -223,10 +265,23 @@ public class Node {
                     System.out.println("interRequestDelay interrupted, proceeding to enter cs again if num requests made has not exceeded maximum");
                 }
             }
-        }).start();
+        });
+        cs.start();
 
         /** Thread for granting critical section requests to membership set*/
+        Thread read = new Thread(() -> {
+            int numExited = 0; //number of EXIT messages received
+            while (numExited < qMembers.size()) {
+                for (Neighbor n : this.qMembers.values()) {
+                    Message msg = readMessage();
+                    if (msg.msgType == MessageType.REQUEST) {
+                        requestQueue.add(new Request(numExited, numExited))
+                    }
+                }
+            }
+        });
 
+        cs.join();
     }
 
     private String lt() { return "\n\t"; }
