@@ -213,7 +213,7 @@ public class Node {
     }
 
     private void csEnter() {
-        sendMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
+        broadcastMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
 
         //enter CS if grant from all qMembers
         boolean canEnter = true;
@@ -228,14 +228,14 @@ public class Node {
     }
 
     private void csLeave() {
-        sendMessage(MessageType.RELEASE); //send message informing other processes that CS is no longer in use
+        broadcastMessage(MessageType.RELEASE); //send message informing other processes that CS is no longer in use
         return;
     }
 
-    private void sendMessage(MessageType type) {
-        sendMessage(type, -1);
+    private void broadcastMessage(MessageType type) {
+        broadcastMessage(type, -1);
     }
-    private void sendMessage(MessageType type, int clock) {
+    private void broadcastMessage(MessageType type, int clock) {
         if (type == MessageType.REQUEST || type == MessageType.RELEASE) {
             for (Neighbor n : this.qMembers.values()) {
                 if (n.nodeNumber == this.nodeNumber) continue;
@@ -255,7 +255,9 @@ public class Node {
         }
     }
 
-    private boolean readMessage(Neighbor n) {}
+    private boolean readMessage(Neighbor n) {
+        n.connection.
+    }
 
     public void beginProtocol() {
         /** Thread for requesting critical section from quorum members*/
@@ -286,7 +288,7 @@ public class Node {
         /** Thread for granting critical section requests to membership set*/
         Thread read = new Thread(() -> {
             int numExited = 0; //number of EXIT messages received
-            boolean hasFailed = false;
+            boolean hasFailed = false; //if received a failed message from another quorum member
             while (numExited < qMembers.size()) {
                 for (Neighbor n : this.qMembers.values()) {
                     if (n.nodeNumber == this.nodeNumber) continue;
@@ -294,20 +296,36 @@ public class Node {
                     if (msg == null) continue;
                     switch (msg.msgType) {
                         case REQUEST:
+                            int old = requestQueue.peek().nodeNumber; //node that is at front of queue before inserting new request
                             requestQueue.add(new Request(n.nodeNumber, msg.clock));
-                            if (requestQueue.peek().nodeNumber == n.nodeNumber) sendMessage(MessageType.GRANT);
+                            if (requestQueue.peek().nodeNumber != n.nodeNumber) sendMessage(MessageType.FAILED, -1, n.nodeNumber);
+                            else sendMessage(MessageType.INQUIRE, -1, old);
                             break;
                         case GRANT:
                             n.granted = true;
                             break;
                         case RELEASE:
-                            requestQueue.remove(new Request(n.nodeNumber, -1));
+                            /** can't simply remove top of queue since the process that sent the release message is not guaranteed
+                            to be at the top of queue. For example, if a process enters the CS and then later a quorum member receives a request with a smaller
+                            timestamp, then there would be a smaller timestamp in the queue*/
+                            requestQueue.remove(new Request(n.nodeNumber, -1)); 
                             break;
                         case INQUIRE:
                             if (hasFailed) {
-                                this.granted = n.nodeNumber;
-                                sendMessage(MessageType.YIELD, ))
+                                n.granted = false;
+                                sendMessage(MessageType.YIELD, -1, n.nodeNumber);
                             }
+                            break;
+                        case YIELD:
+                            n.granted = true;
+                            break;
+                        case FAILED:
+                            n.granted = false; //probably not necessary
+                            hasFailed = true;
+                            break;
+                        case EXIT:
+                            numExited++;
+                            break;
                     }
                 }
             }

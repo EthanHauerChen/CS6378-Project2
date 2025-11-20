@@ -36,6 +36,10 @@ public class Connection {
         return ((ObjectInputStream)in).readInt();
     }
 
+    public Message readMessage(Neighbor n) throws IOException {
+        return (Message) (((ObjectInputStream)in).readObject());
+    }
+
     public void writeInt(int output) throws IOException {
         if (out instanceof ObjectOutputStream) ((ObjectOutputStream)out).writeInt(output);
         else {
