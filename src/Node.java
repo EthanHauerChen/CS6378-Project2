@@ -15,6 +15,7 @@ public class Node {
     int interRequestDelay;
     int csExecutionTime;
     int numRequests;
+    int granted; //-1 if no processes need grant, else node number of process being granted
     HashMap<Integer, Neighbor> qMembers;
     PriorityQueue<Request> requestQueue;
     private int clock;
@@ -301,6 +302,10 @@ public class Node {
                         case RELEASE:
                             requestQueue.remove(new Request(n.nodeNumber, -1));
                             break;
+                        case INQUIRE:
+                            if (!this.canEnter()) {
+                                
+                            }
                     }
                 }
             }
