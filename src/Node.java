@@ -209,7 +209,7 @@ public class Node {
         for (Neighbor n : this.qMembers.values()) {
             if (!n.granted) return false;
         }
-        return true;
+        return this.granted == this.nodeNumber && true;
     }
 
     private void csEnter() {
@@ -255,7 +255,7 @@ public class Node {
         }
     }
 
-    private boolean readMessage() {}
+    private boolean readMessage(Neighbor n) {}
 
     public void beginProtocol() {
         /** Thread for requesting critical section from quorum members*/
@@ -286,10 +286,11 @@ public class Node {
         /** Thread for granting critical section requests to membership set*/
         Thread read = new Thread(() -> {
             int numExited = 0; //number of EXIT messages received
+            boolean hasFailed = false;
             while (numExited < qMembers.size()) {
                 for (Neighbor n : this.qMembers.values()) {
                     if (n.nodeNumber == this.nodeNumber) continue;
-                    Message msg = readMessage();
+                    Message msg = readMessage(n);
                     if (msg == null) continue;
                     switch (msg.msgType) {
                         case REQUEST:
@@ -303,8 +304,9 @@ public class Node {
                             requestQueue.remove(new Request(n.nodeNumber, -1));
                             break;
                         case INQUIRE:
-                            if (!this.canEnter()) {
-                                
+                            if (hasFailed) {
+                                this.granted = n.nodeNumber;
+                                sendMessage(MessageType.YIELD, ))
                             }
                     }
                 }
