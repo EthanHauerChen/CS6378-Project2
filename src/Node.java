@@ -255,8 +255,8 @@ public class Node {
         }
     }
 
-    private boolean readMessage(Neighbor n) {
-        n.connection.
+    private Message readMessage(Neighbor n) {
+        return n.connection.readMessage();
     }
 
     public void beginProtocol() {

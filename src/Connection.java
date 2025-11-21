@@ -36,8 +36,16 @@ public class Connection {
         return ((ObjectInputStream)in).readInt();
     }
 
-    public Message readMessage(Neighbor n) throws IOException {
-        return (Message) (((ObjectInputStream)in).readObject());
+    public Message readMessage() {
+        try {
+            Message m = (Message) (((ObjectInputStream)in).readObject());
+            return m;
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Something went wrong reading message");
+            return null;
+        }
     }
 
     public void writeInt(int output) throws IOException {
