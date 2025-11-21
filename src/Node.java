@@ -283,7 +283,6 @@ public class Node {
                 }
             }
         });
-        cs.start();
 
         /** Thread for granting critical section requests to membership set*/
         Thread read = new Thread(() -> {
@@ -296,10 +295,12 @@ public class Node {
                     if (msg == null) continue;
                     switch (msg.msgType) {
                         case REQUEST:
-                            int old = requestQueue.peek().nodeNumber; //node that is at front of queue before inserting new request
-                            requestQueue.add(new Request(n.nodeNumber, msg.clock));
-                            if (requestQueue.peek().nodeNumber != n.nodeNumber) sendMessage(MessageType.FAILED, -1, n.nodeNumber);
-                            else sendMessage(MessageType.INQUIRE, -1, old);
+                            Request oldReq = requestQueue.peek();
+                            Request newReq = new Request(n.nodeNumber, msg.clock);
+                            requestQueue.add(newReq);
+                            if (oldReq == null) sendMessage(MessageType.GRANT, -1, n.nodeNumber); //if only request in queue, grant
+                            else if (oldReq.compareTo(newReq) > 0) sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
+                            else sendMessage(MessageType.FAILED, -1, newReq.nodeNumber);
                             break;
                         case GRANT:
                             n.granted = true;
@@ -331,7 +332,11 @@ public class Node {
             }
         });
 
+        cs.start();
+        read.start();
+
         cs.join();
+        read.join();
     }
 
     private String lt() { return "\n\t"; }
