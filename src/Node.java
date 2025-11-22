@@ -15,7 +15,7 @@ public class Node {
     int interRequestDelay;
     int csExecutionTime;
     int numRequests;
-    int granted; //-1 if no processes need grant, else node number of process being granted
+    int granted; //this.nodeNumber if no processes need grant, else node number of process being granted
     HashMap<Integer, Neighbor> qMembers;
     PriorityQueue<Request> requestQueue;
     private int clock;
@@ -54,6 +54,7 @@ public class Node {
         this.numRequests = numRequests;
         addQMembers(qMembers);
         clock = 0;
+        this.granted = this.nodeNumber;
     }
     private void addQMembers (Neighbor[] members) {
         qMembers = new HashMap<Integer, Neighbor>(members.length);
@@ -206,6 +207,8 @@ public class Node {
     private void incrementClock() { clock++; }
 
     private boolean canEnter() {
+        if (requestQueue.isEmpty()) return true; //not necessary to check since this node's request is added to queue in csEnter, but here for clarity
+        else if (requestQueue.peek().nodeNumber != this.nodeNumber) return false;
         for (Neighbor n : this.qMembers.values()) {
             if (!n.granted) return false;
         }
@@ -214,14 +217,21 @@ public class Node {
 
     private void csEnter() {
         broadcastMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
+        requestQueue.add(new Request(this.nodeNumber, ++clock)); //add own request to queue
+        long start = System.currentTimeMillis();
 
         //enter CS if grant from all qMembers
-        boolean canEnter = true;
         while(!canEnter()) {
             try { //retry after waiting .1 seconds
                 Thread.sleep(100); 
             }
             catch (InterruptedException e) {}
+            if (System.currentTimeMillis() - start > 15000) { //timeout
+                    attemptExit();
+                    closeConnections();
+                    System.out.println(this.nodeNumber + " timeout inside csEnter");
+                    return;
+                }
         }
     
         //enter CS
@@ -229,6 +239,8 @@ public class Node {
 
     private void csLeave() {
         broadcastMessage(MessageType.RELEASE); //send message informing other processes that CS is no longer in use
+        for (Neighbor n : this.qMembers.values()) n.granted = false;
+        requestQueue.remove(new Request(this.nodeNumber, -1)); //remove own request from queue. can use timestamp -1 since equals() only compares nodeNumber, and that is fine because only 1 of this node's requests can be in queue at a time
         return;
     }
 
@@ -240,6 +252,7 @@ public class Node {
             for (Neighbor n : this.qMembers.values()) {
                 if (n.nodeNumber == this.nodeNumber) continue;
                 if (!n.connection.writeMessage(new Message(type, clock))) {
+                    attemptExit();
                     closeConnections();
                     System.out.println(this.nodeNumber + " failed to write message, abort protocol");
                     System.exit(-1);
@@ -249,9 +262,16 @@ public class Node {
     }
     private void sendMessage(MessageType type, int clock, int dest) {
         if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock))) {
+            attemptExit();
             closeConnections();
             System.out.println(this.nodeNumber + " failed to write message, abort protocol");
             System.exit(-1);
+        }
+    }
+    private void attemptExit() {
+        for (Neighbor n : this.qMembers.values()) {
+            if (n.nodeNumber == this.nodeNumber) continue;
+            n.connection.writeMessage(new Message(MessageType.EXIT, -1));
         }
     }
 
@@ -286,9 +306,10 @@ public class Node {
 
         /** Thread for granting critical section requests to membership set*/
         Thread read = new Thread(() -> {
+            long start = System.currentTimeMillis();
             int numExited = 0; //number of EXIT messages received
             boolean hasFailed = false; //if received a failed message from another quorum member
-            while (numExited < qMembers.size()) {
+            while (numExited < qMembers.size() - 1) { //-1 because this node is also part of qMembers
                 for (Neighbor n : this.qMembers.values()) {
                     if (n.nodeNumber == this.nodeNumber) continue;
                     Message msg = readMessage(n);
@@ -310,6 +331,7 @@ public class Node {
                             to be at the top of queue. For example, if a process enters the CS and then later a quorum member receives a request with a smaller
                             timestamp, then there would be a smaller timestamp in the queue*/
                             requestQueue.remove(new Request(n.nodeNumber, -1)); 
+                            if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) this.granted = this.nodeNumber;
                             break;
                         case INQUIRE:
                             if (hasFailed) {
@@ -329,14 +351,26 @@ public class Node {
                             break;
                     }
                 }
+
+                if (System.currentTimeMillis() - start > 15000) { //timeout
+                    attemptExit();
+                    closeConnections();
+                    System.out.println(this.nodeNumber + " timeout inside the read thread");
+                    return;
+                }
             }
         });
 
         cs.start();
         read.start();
 
-        cs.join();
-        read.join();
+        try {
+            cs.join();
+            read.join();
+        }
+        catch (InterruptedException e) {
+            System.out.println("Unable to join cs or read thread");
+        }
     }
 
     private String lt() { return "\n\t"; }
