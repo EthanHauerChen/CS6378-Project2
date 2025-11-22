@@ -172,7 +172,7 @@ public class Node {
             }
         }
 
-        System.out.println("Node " + this.nodeNumber + ": listening socket successfully accepted all clients");
+        System.out.println("Node " + this.nodeNumber + ": successfully binded to all clients");
     }
 
     public void establishConnections() {
