@@ -54,6 +54,7 @@ public class Node {
         this.numRequests = numRequests;
         addQMembers(qMembers);
         clock = 0;
+        requestQueue = new PriorityQueue<>();
         this.granted = this.nodeNumber;
     }
     private void addQMembers (Neighbor[] members) {
