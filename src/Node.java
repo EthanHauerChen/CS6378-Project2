@@ -262,8 +262,6 @@ public class Node {
         }
     }
     private void sendMessage(MessageType type, int clock, int dest) {
-        System.out.println("node " + this.nodeNumber + " qMembers.get(" + dest + ") = " + this.qMembers.get(dest));
-        System.out.println("node " + this.nodeNumber + " qMembers.get(" + dest + ").connection = " + this.qMembers.get(dest).connection);
         if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock))) {
             attemptExit();
             closeConnections();
@@ -282,6 +280,9 @@ public class Node {
         return n.connection.readMessage();
     }
 
+    private void printDebug(int to, MessageType msg) {
+        System.out.println("node " + this.nodeNumber + " " + msg + " to " + to);
+    }
     public void beginProtocol() {
         /** Thread for requesting critical section from quorum members*/
         Thread cs = new Thread(() -> {
@@ -305,6 +306,7 @@ public class Node {
                     System.out.println("interRequestDelay interrupted, proceeding to enter cs again if num requests made has not exceeded maximum");
                 }
             }
+            broadcastMessage(MessageType.EXIT);
         });
 
         /** Thread for granting critical section requests to membership set*/
@@ -323,21 +325,22 @@ public class Node {
                             Request newReq = new Request(n.nodeNumber, msg.clock);
                             requestQueue.add(newReq);
                             if (oldReq == null) {
-                                System.out.println("node " + this.nodeNumber + " grant to " + newReq.nodeNumber);
+                                printDebug(newReq.nodeNumber, MessageType.GRANT);
                                 sendMessage(MessageType.GRANT, -1, newReq.nodeNumber); //if only request in queue, grant
                             }
                             else if (oldReq.compareTo(newReq) > 0) {
                                 if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
                                     this.granted = n.nodeNumber;
+                                    printDebug(newReq.nodeNumber, MessageType.GRANT);
                                     sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
                                 }
                                 else if (oldReq.nodeNumber != this.nodeNumber) {
-                                    System.out.println("node " + this.nodeNumber + " inquire to " + oldReq.nodeNumber);
+                                    printDebug(oldReq.nodeNumber, MessageType.INQUIRE);
                                     sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
                                 }
                             }
                             else {
-                                System.out.println("node " + this.nodeNumber + " failed to " + newReq.nodeNumber);
+                                printDebug(newReq.nodeNumber, MessageType.FAILED);
                                 sendMessage(MessageType.FAILED, -1, newReq.nodeNumber);
                             }
                             break;
@@ -355,7 +358,7 @@ public class Node {
                         case INQUIRE:
                             if (hasFailed) {
                                 n.granted = false;
-                                System.out.println("node " + this.nodeNumber + " yield to " + n.nodeNumber);
+                                printDebug(n.nodeNumber, MessageType.YIELD);
                                 sendMessage(MessageType.YIELD, -1, n.nodeNumber);
                             }
                             break;
@@ -363,6 +366,7 @@ public class Node {
                             n.granted = false; //probably not necessary
                             hasFailed = true;
                             if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
+                                printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
                                 sendMessage(MessageType.YIELD, -1, requestQueue.peek().nodeNumber);
                             }
                             break;
