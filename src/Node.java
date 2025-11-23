@@ -290,7 +290,7 @@ public class Node {
     }
 
     private void printDebug(int to, MessageType msg) {
-        System.out.print("node " + this.nodeNumber + " " + msg + " to " + to + ", Queue: ");
+        System.out.print("node " + this.nodeNumber + " " + msg + " to " + to + ", Queue" + this.nodeNumber + ": ");
         printQueue();
     }
     private void printQueue() {
@@ -349,6 +349,7 @@ public class Node {
                             else if (oldReq.compareTo(newReq) > 0) {
                                 if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
                                     this.granted = n.nodeNumber;
+                                    hasFailed = true;
                                     printDebug(newReq.nodeNumber, MessageType.GRANT);
                                     sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
                                 }
