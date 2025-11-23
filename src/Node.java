@@ -323,10 +323,14 @@ public class Node {
                             Request newReq = new Request(n.nodeNumber, msg.clock);
                             requestQueue.add(newReq);
                             if (oldReq == null) {
-                                System.out.println("node " + this.nodeNumber + " grant to " + n.nodeNumber);
-                                sendMessage(MessageType.GRANT, -1, n.nodeNumber); //if only request in queue, grant
+                                System.out.println("node " + this.nodeNumber + " grant to " + newReq.nodeNumber);
+                                sendMessage(MessageType.GRANT, -1, newReq.nodeNumber); //if only request in queue, grant
                             }
                             else if (oldReq.compareTo(newReq) > 0) {
+                                if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
+                                    this.granted = n.nodeNumber;
+                                    sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
+                                }
                                 System.out.println("node " + this.nodeNumber + " inquire to " + oldReq.nodeNumber);
                                 sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
                             }
@@ -336,6 +340,7 @@ public class Node {
                             }
                             break;
                         case GRANT:
+                        case YIELD:
                             n.granted = true;
                             break;
                         case RELEASE:
@@ -352,12 +357,12 @@ public class Node {
                                 sendMessage(MessageType.YIELD, -1, n.nodeNumber);
                             }
                             break;
-                        case YIELD:
-                            n.granted = true;
-                            break;
                         case FAILED:
                             n.granted = false; //probably not necessary
                             hasFailed = true;
+                            if (!requestQueue.isEmpty() &&requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
+                                //implement. need to create some sort of queue that stores outstanding INQUIRE messages
+                            }
                             break;
                         case EXIT:
                             numExited++;
