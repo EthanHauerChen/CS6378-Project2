@@ -216,7 +216,7 @@ public class Node {
         return this.granted == this.nodeNumber && true;
     }
 
-    private void csEnter() {
+    private boolean csEnter() {
         broadcastMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
         requestQueue.add(new Request(this.nodeNumber, ++clock)); //add own request to queue
         long start = System.currentTimeMillis();
@@ -231,11 +231,12 @@ public class Node {
                     attemptExit();
                     closeConnections();
                     System.out.println(this.nodeNumber + " timeout inside csEnter");
-                    return;
+                    return false;
                 }
         }
     
         //enter CS
+        return true;
     }
 
     private void csLeave() {
@@ -288,7 +289,10 @@ public class Node {
         /** Thread for requesting critical section from quorum members*/
         Thread cs = new Thread(() -> {
             for (int i = 0; i < this.numRequests; i++) {
-                csEnter(); //blocking request for critical section
+                if(!csEnter()) { //blocking request for critical section
+                    System.out.println(this.nodeNumber + " failed to enter CS, abort");
+                    return;
+                }
                 System.out.println(this.nodeNumber + " entered CS");
                 while (true) {
                     try {
@@ -325,6 +329,7 @@ public class Node {
                         case REQUEST:
                             Request oldReq = requestQueue.peek();
                             Request newReq = new Request(n.nodeNumber, msg.clock);
+                            this.clock = newReq.timestamp + 1;
                             requestQueue.add(newReq);
                             if (oldReq == null) {
                                 printDebug(newReq.nodeNumber, MessageType.GRANT);
