@@ -223,7 +223,7 @@ public class Node {
 
     private boolean csEnter() {
         broadcastMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
-        requestQueue.add(new Request(this.nodeNumber, ++clock)); //add own request to queue
+        requestQueue.add(new Request(this.nodeNumber, clock++)); //add own request to queue
         long start = System.currentTimeMillis();
 
         //enter CS if grant from all qMembers
