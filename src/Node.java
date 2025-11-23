@@ -331,8 +331,10 @@ public class Node {
                                     this.granted = n.nodeNumber;
                                     sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
                                 }
-                                System.out.println("node " + this.nodeNumber + " inquire to " + oldReq.nodeNumber);
-                                sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
+                                else if (oldReq.nodeNumber != this.nodeNumber) {
+                                    System.out.println("node " + this.nodeNumber + " inquire to " + oldReq.nodeNumber);
+                                    sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
+                                }
                             }
                             else {
                                 System.out.println("node " + this.nodeNumber + " failed to " + newReq.nodeNumber);
@@ -360,8 +362,8 @@ public class Node {
                         case FAILED:
                             n.granted = false; //probably not necessary
                             hasFailed = true;
-                            if (!requestQueue.isEmpty() &&requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
-                                //implement. need to create some sort of queue that stores outstanding INQUIRE messages
+                            if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
+                                sendMessage(MessageType.YIELD, -1, requestQueue.peek().nodeNumber);
                             }
                             break;
                         case EXIT:
