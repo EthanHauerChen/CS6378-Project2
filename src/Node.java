@@ -322,9 +322,18 @@ public class Node {
                             Request oldReq = requestQueue.peek();
                             Request newReq = new Request(n.nodeNumber, msg.clock);
                             requestQueue.add(newReq);
-                            if (oldReq == null) sendMessage(MessageType.GRANT, -1, n.nodeNumber); //if only request in queue, grant
-                            else if (oldReq.compareTo(newReq) > 0) sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
-                            else sendMessage(MessageType.FAILED, -1, newReq.nodeNumber);
+                            if (oldReq == null) {
+                                System.out.println("node " + this.nodeNumber + " grant to " + n.nodeNumber);
+                                sendMessage(MessageType.GRANT, -1, n.nodeNumber); //if only request in queue, grant
+                            }
+                            else if (oldReq.compareTo(newReq) > 0) {
+                                System.out.println("node " + this.nodeNumber + " inquire to " + oldReq.nodeNumber);
+                                sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
+                            }
+                            else {
+                                System.out.println("node " + this.nodeNumber + " failed to " + newReq.nodeNumber);
+                                sendMessage(MessageType.FAILED, -1, newReq.nodeNumber);
+                            }
                             break;
                         case GRANT:
                             n.granted = true;
@@ -339,6 +348,7 @@ public class Node {
                         case INQUIRE:
                             if (hasFailed) {
                                 n.granted = false;
+                                System.out.println("node " + this.nodeNumber + " yield to " + n.nodeNumber);
                                 sendMessage(MessageType.YIELD, -1, n.nodeNumber);
                             }
                             break;
