@@ -258,6 +258,7 @@ public class Node {
                     System.out.println(this.nodeNumber + " failed to write message, abort protocol");
                     System.exit(-1);
                 }
+                else printDebug(n.nodeNumber, type);
             }
         }
     }
@@ -288,6 +289,7 @@ public class Node {
         Thread cs = new Thread(() -> {
             for (int i = 0; i < this.numRequests; i++) {
                 csEnter(); //blocking request for critical section
+                System.out.println(this.nodeNumber + " entered CS");
                 while (true) {
                     try {
                         Thread.sleep(this.csExecutionTime);
