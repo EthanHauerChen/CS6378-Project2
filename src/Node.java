@@ -218,7 +218,7 @@ public class Node {
         for (Neighbor n : this.qMembers.values()) {
             if (!n.granted) return false;
         }
-        return this.granted == this.nodeNumber && true;
+        return this.granted == this.nodeNumber;
     }
 
     private boolean csEnter() {
@@ -294,7 +294,7 @@ public class Node {
         printQueue();
     }
     private void printQueue() {
-        System.out.println(requestQueue.toString());
+        System.out.println(requestQueue.toString() + ", clock: " + this.clock);
     }
     public void beginProtocol() {
         /** Thread for requesting critical section from quorum members*/
