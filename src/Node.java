@@ -262,6 +262,8 @@ public class Node {
         }
     }
     private void sendMessage(MessageType type, int clock, int dest) {
+        System.out.println("node " + this.nodeNumber + " qMembers.get(" + dest + ") = " + this.qMembers.get(dest));
+        System.out.println("node " + this.nodeNumber + " qMembers.get(" + dest + ").connection = " + this.qMembers.get(dest).connection);
         if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock))) {
             attemptExit();
             closeConnections();
