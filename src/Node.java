@@ -43,6 +43,11 @@ public class Node {
             Request temp = (Request)o;
             return this.nodeNumber == temp.nodeNumber; //impossible for multiple requests from same node at the same time since csEnter is blocking
         }
+
+        @Override
+        public String toString() {
+            return "(node: " + this.nodeNumber + ", timestamp: " + this.timestamp + ")";
+        }
     }
 
     public Node(String hostname, int port, int nodenum, int interRequestDelay, int csExecutionTime, int numRequests, Neighbor[] qMembers) {
@@ -259,7 +264,9 @@ public class Node {
                     System.out.println(this.nodeNumber + " failed to write message, abort protocol");
                     System.exit(-1);
                 }
-                else printDebug(n.nodeNumber, type);
+                else {
+                    printDebug(n.nodeNumber, type);
+                }
             }
         }
     }
@@ -283,7 +290,11 @@ public class Node {
     }
 
     private void printDebug(int to, MessageType msg) {
-        System.out.println("node " + this.nodeNumber + " " + msg + " to " + to);
+        System.out.print("node " + this.nodeNumber + " " + msg + " to " + to + ", Queue: ");
+        printQueue();
+    }
+    private void printQueue() {
+        System.out.println(requestQueue.toString());
     }
     public void beginProtocol() {
         /** Thread for requesting critical section from quorum members*/
