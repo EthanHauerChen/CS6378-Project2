@@ -215,18 +215,18 @@ public class Node {
     private boolean canEnter() {
         if (requestQueue.isEmpty()) return true; //not necessary to check since this node's request is added to queue in csEnter, but here for clarity
         else if (requestQueue.peek().nodeNumber != this.nodeNumber) {
-            // if (this.nodeNumber == 1) {
-            // System.out.print(this.nodeNumber + " canEnter false. not at top of queue: ");
-            // printQueue();
-            // }
+            if (this.nodeNumber == 3) {
+            System.out.print(this.nodeNumber + " canEnter false. not at top of queue: ");
+            printQueue();
+            }
             return false;
         }
         for (Neighbor n : this.qMembers.values()) {
             if (!n.granted) {
-                // if (this.nodeNumber == 1) {
-                // System.out.print(this.nodeNumber + " canEnter false. " + n.nodeNumber + " not granted. queue: ");
-                // printQueue();
-                // }
+                if (this.nodeNumber == 3) {
+                System.out.print(this.nodeNumber + " canEnter false. " + n.nodeNumber + " not granted. queue: ");
+                printQueue();
+                }
                 return false;
             }
         }
