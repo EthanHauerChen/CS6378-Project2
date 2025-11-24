@@ -256,6 +256,10 @@ public class Node {
         broadcastMessage(MessageType.RELEASE); //send message informing other processes that CS is no longer in use
         for (Neighbor n : this.qMembers.values()) n.granted = false;
         requestQueue.remove(new Request(this.nodeNumber, -1)); //remove own request from queue. can use timestamp -1 since equals() only compares nodeNumber, and that is fine because only 1 of this node's requests can be in queue at a time
+        Request nextReq = requestQueue.peek();
+        if (!requestQueue.isEmpty() && nextReq.nodeNumber != this.nodeNumber) {
+            sendMessage(MessageType.GRANT, -1, nextReq.nodeNumber);
+        }
         return;
     }
 
@@ -382,9 +386,6 @@ public class Node {
                             timestamp, then there would be a smaller timestamp in the queue*/
                             requestQueue.remove(new Request(n.nodeNumber, -1)); 
                             if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) this.qMembers.get(this.nodeNumber).granted = true;
-                            else {
-                                sendMessage(MessageType.GRANT, -1, requestQueue.peek().nodeNumber);
-                            }
                             break;
                         case INQUIRE:
                             if (hasFailed) {
