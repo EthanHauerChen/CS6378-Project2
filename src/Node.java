@@ -240,12 +240,12 @@ public class Node {
                 Thread.sleep(100); 
             }
             catch (InterruptedException e) {}
-            if (System.currentTimeMillis() - start > 15000) { //timeout
-                    attemptExit();
-                    closeConnections();
-                    System.out.println(this.nodeNumber + " timeout inside csEnter");
-                    return false;
-                }
+            // if (System.currentTimeMillis() - start > 15000) { //timeout
+            //     attemptExit();
+            //     closeConnections();
+            //     System.out.println(this.nodeNumber + " timeout inside csEnter");
+            //     return false;
+            // }
         }
     
         //enter CS
@@ -407,12 +407,12 @@ public class Node {
                     }
                 }
 
-                if (System.currentTimeMillis() - start > 15000) { //timeout
-                    attemptExit();
-                    closeConnections();
-                    System.out.println(this.nodeNumber + " timeout inside the read thread");
-                    return;
-                }
+                // if (System.currentTimeMillis() - start > 15000) { //timeout
+                //     attemptExit();
+                //     closeConnections();
+                //     System.out.println(this.nodeNumber + " timeout inside the read thread");
+                //     return;
+                // }
             }
         });
 
