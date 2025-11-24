@@ -391,7 +391,7 @@ public class Node {
                             to be at the top of queue. For example, if a process enters the CS and then later a quorum member receives a request with a smaller
                             timestamp, then there would be a smaller timestamp in the queue*/
                             requestQueue.remove(new Request(n.nodeNumber, -1)); 
-                            if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) this.qMembers.get(n.nodeNumber).granted = true;
+                            if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) this.qMembers.get(this.nodeNumber).granted = true;
                             else {
                                 sendMessage(MessageType.GRANT, -1, requestQueue.peek().nodeNumber);
                             }
