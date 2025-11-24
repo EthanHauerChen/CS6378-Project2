@@ -381,6 +381,9 @@ public class Node {
                             timestamp, then there would be a smaller timestamp in the queue*/
                             requestQueue.remove(new Request(n.nodeNumber, -1)); 
                             if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) this.qMembers.get(this.nodeNumber).granted = true;
+                            else {
+                                sendMessage(MessageType.GRANT, -1, requestQueue.peek().nodeNumber);
+                            }
                             break;
                         case INQUIRE:
                             if (hasFailed) {
