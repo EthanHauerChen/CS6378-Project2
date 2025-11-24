@@ -257,6 +257,8 @@ public class Node {
         for (Neighbor n : this.qMembers.values()) n.granted = false;
         requestQueue.remove(new Request(this.nodeNumber, -1)); //remove own request from queue. can use timestamp -1 since equals() only compares nodeNumber, and that is fine because only 1 of this node's requests can be in queue at a time
         Request nextReq = requestQueue.peek();
+        System.out.print(this.nodeNumber + " csLeave. Queue after removing own req: ");
+        printQueue();
         if (!requestQueue.isEmpty() && nextReq.nodeNumber != this.nodeNumber) {
             sendMessage(MessageType.GRANT, -1, nextReq.nodeNumber);
         }
