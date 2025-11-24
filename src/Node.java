@@ -384,6 +384,7 @@ public class Node {
                             break;
                         case GRANT:
                         case YIELD:
+                            if (this.nodeNumber == 3) System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber);
                             n.granted = true;
                             break;
                         case RELEASE:
