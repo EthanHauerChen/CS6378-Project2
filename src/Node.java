@@ -214,9 +214,17 @@ public class Node {
 
     private boolean canEnter() {
         if (requestQueue.isEmpty()) return true; //not necessary to check since this node's request is added to queue in csEnter, but here for clarity
-        else if (requestQueue.peek().nodeNumber != this.nodeNumber) return false;
+        else if (requestQueue.peek().nodeNumber != this.nodeNumber) {
+            System.out.print(this.nodeNumber + " canEnter false. not at top of queue: ");
+            printQueue();
+            return false;
+        }
         for (Neighbor n : this.qMembers.values()) {
-            if (!n.granted) return false;
+            if (!n.granted) {
+                System.out.print(this.nodeNumber + " canEnter false. " + n.nodeNumber + " not granted. queue: ");
+                printQueue();
+                return false;
+            }
         }
         return this.granted == this.nodeNumber;
     }
