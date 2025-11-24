@@ -15,7 +15,7 @@ public class Node {
     int interRequestDelay;
     int csExecutionTime;
     int numRequests;
-    int granted; //this.nodeNumber if no processes need grant, else node number of process being granted
+    //int granted; //this.nodeNumber if no processes need grant, else node number of process being granted
     HashMap<Integer, Neighbor> qMembers;
     PriorityQueue<Request> requestQueue;
     private int clock;
@@ -60,7 +60,7 @@ public class Node {
         addQMembers(qMembers);
         clock = 0;
         requestQueue = new PriorityQueue<>();
-        this.granted = this.nodeNumber;
+        this.qMembers.get(this.nodeNumber).granted = true;
     }
     private void addQMembers (Neighbor[] members) {
         qMembers = new HashMap<Integer, Neighbor>(members.length);
@@ -226,7 +226,7 @@ public class Node {
                 return false;
             }
         }
-        return this.granted == this.nodeNumber;
+        return this.qMembers.get(this.nodeNumber).granted;
     }
 
     private boolean csEnter() {
@@ -356,7 +356,7 @@ public class Node {
                             }
                             else if (oldReq.compareTo(newReq) > 0) {
                                 if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
-                                    this.granted = n.nodeNumber;
+                                    this.qMembers.get(this.nodeNumber).granted = false;
                                     hasFailed = true;
                                     printDebug(newReq.nodeNumber, MessageType.GRANT);
                                     sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
@@ -380,7 +380,7 @@ public class Node {
                             to be at the top of queue. For example, if a process enters the CS and then later a quorum member receives a request with a smaller
                             timestamp, then there would be a smaller timestamp in the queue*/
                             requestQueue.remove(new Request(n.nodeNumber, -1)); 
-                            if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) this.granted = this.nodeNumber;
+                            if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) this.qMembers.get(this.nodeNumber).granted = true;
                             break;
                         case INQUIRE:
                             if (hasFailed) {
