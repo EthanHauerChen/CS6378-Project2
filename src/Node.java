@@ -355,7 +355,7 @@ public class Node {
                         case REQUEST:
                             Request oldReq = requestQueue.peek();
                             Request newReq = new Request(n.nodeNumber, msg.clock);
-                            this.clock = Math.max(this.clock, newReq.timestamp + 1);
+                            this.clock = Math.max(this.clock, newReq.timestamp) + 1;
                             requestQueue.add(newReq);
                             if (oldReq == null) {
                                 //printDebug(newReq.nodeNumber, MessageType.GRANT);
