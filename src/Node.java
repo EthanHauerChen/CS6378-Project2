@@ -215,14 +215,14 @@ public class Node {
     private boolean canEnter() {
         if (requestQueue.isEmpty()) return true; //not necessary to check since this node's request is added to queue in csEnter, but here for clarity
         else if (requestQueue.peek().nodeNumber != this.nodeNumber) {
-            System.out.print(this.nodeNumber + " canEnter false. not at top of queue: ");
-            printQueue();
+            // System.out.print(this.nodeNumber + " canEnter false. not at top of queue: ");
+            // printQueue();
             return false;
         }
         for (Neighbor n : this.qMembers.values()) {
             if (!n.granted) {
-                System.out.print(this.nodeNumber + " canEnter false. " + n.nodeNumber + " not granted. queue: ");
-                printQueue();
+                // System.out.print(this.nodeNumber + " canEnter false. " + n.nodeNumber + " not granted. queue: ");
+                // printQueue();
                 return false;
             }
         }
@@ -285,6 +285,7 @@ public class Node {
             System.out.println(this.nodeNumber + " failed to write message, abort protocol");
             System.exit(-1);
         }
+        printDebug(dest, type);
     }
     private void attemptExit() {
         for (Neighbor n : this.qMembers.values()) {
@@ -351,23 +352,23 @@ public class Node {
                             this.clock = newReq.timestamp + 1;
                             requestQueue.add(newReq);
                             if (oldReq == null) {
-                                printDebug(newReq.nodeNumber, MessageType.GRANT);
+                                //printDebug(newReq.nodeNumber, MessageType.GRANT);
                                 sendMessage(MessageType.GRANT, -1, newReq.nodeNumber); //if only request in queue, grant
                             }
                             else if (oldReq.compareTo(newReq) > 0) {
                                 if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
                                     this.qMembers.get(this.nodeNumber).granted = false;
                                     hasFailed = true;
-                                    printDebug(newReq.nodeNumber, MessageType.GRANT);
+                                    //printDebug(newReq.nodeNumber, MessageType.GRANT);
                                     sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
                                 }
                                 else if (oldReq.nodeNumber != this.nodeNumber) {
-                                    printDebug(oldReq.nodeNumber, MessageType.INQUIRE);
+                                    //printDebug(oldReq.nodeNumber, MessageType.INQUIRE);
                                     sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
                                 }
                             }
                             else {
-                                printDebug(newReq.nodeNumber, MessageType.FAILED);
+                                //printDebug(newReq.nodeNumber, MessageType.FAILED);
                                 sendMessage(MessageType.FAILED, -1, newReq.nodeNumber);
                             }
                             break;
@@ -388,7 +389,7 @@ public class Node {
                         case INQUIRE:
                             if (hasFailed) {
                                 n.granted = false;
-                                printDebug(n.nodeNumber, MessageType.YIELD);
+                                //printDebug(n.nodeNumber, MessageType.YIELD);
                                 sendMessage(MessageType.YIELD, -1, n.nodeNumber);
                             }
                             break;
@@ -396,7 +397,7 @@ public class Node {
                             n.granted = false; //probably not necessary
                             hasFailed = true;
                             if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
-                                printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
+                                //printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
                                 sendMessage(MessageType.YIELD, -1, requestQueue.peek().nodeNumber);
                             }
                             break;
