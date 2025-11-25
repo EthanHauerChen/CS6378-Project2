@@ -384,8 +384,8 @@ public class Node {
                             break;
                         case GRANT:
                         case YIELD:
-                            if (this.nodeNumber == 3) System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
                             n.granted = true;
+                            if (this.nodeNumber == 3) System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
                             break;
                         case RELEASE:
                             /** can't simply remove top of queue since the process that sent the release message is not guaranteed
