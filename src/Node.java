@@ -292,6 +292,7 @@ public class Node {
         }
     }
     private void sendMessage(MessageType type, int clock, int dest) {
+        if (this.nodeNumber == 0 && dest == 3) System.out.println(this.nodeNumber + " sending " + new Message(type, clock));
         if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock))) {
             attemptExit();
             closeConnections();
