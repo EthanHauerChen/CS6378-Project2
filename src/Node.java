@@ -265,6 +265,9 @@ public class Node {
         printQueue();
         if (!requestQueue.isEmpty() && nextReq.nodeNumber != this.nodeNumber) {
             sendMessage(MessageType.GRANT, -1, nextReq.nodeNumber);
+            if (this.nodeNumber == 0 && nextReq.nodeNumber == 3) {
+                System.out.println(nextReq.nodeNumber + ": " + this.qMembers.get(nextReq));
+            }
         }
         return;
     }
