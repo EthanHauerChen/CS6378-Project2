@@ -9,4 +9,9 @@ public class Message implements Serializable {
         this.msgType = msg;
         this.clock = clock;
     }
+
+    @Override
+    public String toString() {
+        return "Message(type: " + msgType + ", clock: " + clock + ")";
+    }
 }
