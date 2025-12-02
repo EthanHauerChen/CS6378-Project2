@@ -349,14 +349,15 @@ public class Node {
             broadcastMessage(MessageType.EXIT);
         });
 
-        /** Thread for granting critical section requests to membership set*/
-        Thread read = new Thread(() -> {
-            long start = System.currentTimeMillis();
-            int numExited = 0; //number of EXIT messages received
-            boolean hasFailed = false; //if received a failed message from another quorum member
-            while (numExited < qMembers.size() - 1) { //-1 because this node is also part of qMembers
-                for (Neighbor n : this.qMembers.values()) {
-                    if (n.nodeNumber == this.nodeNumber) continue;
+        Thread[] read = new Thread[this.qMembers.size() - 1]; //do not include yourself, hence -1
+        int i = 0;
+        for (Neighbor n : this.qMembers.values()) {
+            if (n.nodeNumber == this.nodeNumber) continue;
+            read[i] = new Thread(() -> {
+                long start = System.currentTimeMillis();
+                int numExited = 0; //number of EXIT messages received
+                boolean hasFailed = false; //if received a failed message from another quorum member
+                while (numExited < qMembers.size() - 1) { //-1 because this node is also part of qMembers
                     Message msg = readMessage(n);
                     if (msg == null) continue;
                     if (this.nodeNumber == 3 && n.nodeNumber == 0) {
@@ -425,24 +426,112 @@ public class Node {
                         case EXIT:
                             numExited++;
                             break;
+                        }
                     }
-                }
 
-                // if (System.currentTimeMillis() - start > 15000) { //timeout
-                //     attemptExit();
-                //     closeConnections();
-                //     System.out.println(this.nodeNumber + " timeout inside the read thread");
-                //     return;
-                // }
-            }
-        });
+                    // if (System.currentTimeMillis() - start > 15000) { //timeout
+                    //     attemptExit();
+                    //     closeConnections();
+                    //     System.out.println(this.nodeNumber + " timeout inside the read thread");
+                    //     return;
+                    // }
+            });
+        }
+
+        /** Thread for granting critical section requests to membership set*/
+        // Thread read = new Thread(() -> {
+        //     long start = System.currentTimeMillis();
+        //     int numExited = 0; //number of EXIT messages received
+        //     boolean hasFailed = false; //if received a failed message from another quorum member
+        //     while (numExited < qMembers.size() - 1) { //-1 because this node is also part of qMembers
+        //         for (Neighbor n : this.qMembers.values()) {
+        //             if (n.nodeNumber == this.nodeNumber) continue;
+        //             Message msg = readMessage(n);
+        //             if (msg == null) continue;
+        //             if (this.nodeNumber == 3 && n.nodeNumber == 0) {
+        //                 System.out.println(this.nodeNumber + " reading non-null message from: " + n.nodeNumber + ": " + msg.toString());
+        //             }
+        //             switch (msg.msgType) {
+        //                 case REQUEST:
+        //                     Request oldReq = requestQueue.peek();
+        //                     Request newReq = new Request(n.nodeNumber, msg.clock);
+        //                     this.clock = Math.max(this.clock, newReq.timestamp) + 1;
+        //                     requestQueue.add(newReq);
+        //                     if (oldReq == null) {
+        //                         //printDebug(newReq.nodeNumber, MessageType.GRANT);
+        //                         sendMessage(MessageType.GRANT, -1, newReq.nodeNumber); //if only request in queue, grant
+        //                     }
+        //                     else if (oldReq.compareTo(newReq) > 0) {
+        //                         if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
+        //                             this.qMembers.get(this.nodeNumber).granted = false;
+        //                             hasFailed = true;
+        //                             //printDebug(newReq.nodeNumber, MessageType.GRANT);
+        //                             sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
+        //                         }
+        //                         else if (oldReq.nodeNumber != this.nodeNumber) {
+        //                             //printDebug(oldReq.nodeNumber, MessageType.INQUIRE);
+        //                             sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
+        //                         }
+        //                     }
+        //                     else {
+        //                         //printDebug(newReq.nodeNumber, MessageType.FAILED);
+        //                         sendMessage(MessageType.FAILED, -1, newReq.nodeNumber);
+        //                     }
+        //                     break;
+        //                 case GRANT:
+        //                 case YIELD:
+        //                     n.granted = true;
+        //                     if (this.nodeNumber == 3) System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
+        //                     break;
+        //                 case RELEASE:
+        //                     /** can't simply remove top of queue since the process that sent the release message is not guaranteed
+        //                     to be at the top of queue. For example, if a process enters the CS and then later a quorum member receives a request with a smaller
+        //                     timestamp, then there would be a smaller timestamp in the queue*/
+        //                     requestQueue.remove(new Request(n.nodeNumber, -1)); 
+        //                     if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) {
+        //                         this.qMembers.get(this.nodeNumber).granted = true;
+        //                         //maybe (as well, not replace above): this.qMembers.get(n.nodeNumber).granted = true;
+        //                     }
+        //                     else {
+        //                         sendMessage(MessageType.GRANT, -1, requestQueue.peek().nodeNumber);
+        //                     }
+        //                     break;
+        //                 case INQUIRE:
+        //                     if (hasFailed) {
+        //                         n.granted = false;
+        //                         //printDebug(n.nodeNumber, MessageType.YIELD);
+        //                         sendMessage(MessageType.YIELD, -1, n.nodeNumber);
+        //                     }
+        //                     break;
+        //                 case FAILED:
+        //                     n.granted = false; //probably not necessary
+        //                     hasFailed = true;
+        //                     if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
+        //                         //printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
+        //                         sendMessage(MessageType.YIELD, -1, requestQueue.peek().nodeNumber);
+        //                     }
+        //                     break;
+        //                 case EXIT:
+        //                     numExited++;
+        //                     break;
+        //             }
+        //         }
+
+        //         // if (System.currentTimeMillis() - start > 15000) { //timeout
+        //         //     attemptExit();
+        //         //     closeConnections();
+        //         //     System.out.println(this.nodeNumber + " timeout inside the read thread");
+        //         //     return;
+        //         // }
+        //     }
+        // });
 
         cs.start();
-        read.start();
+        for (Thread r : read) r.start();
 
         try {
             cs.join();
-            read.join();
+            for (Thread r : read) r.join();
         }
         catch (InterruptedException e) {
             System.out.println("Unable to join cs or read thread");
