@@ -436,6 +436,7 @@ public class Node {
                     //     return;
                     // }
             });
+            i++;
         }
 
         /** Thread for granting critical section requests to membership set*/
