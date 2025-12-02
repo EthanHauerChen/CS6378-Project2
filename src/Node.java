@@ -359,6 +359,9 @@ public class Node {
                     if (n.nodeNumber == this.nodeNumber) continue;
                     Message msg = readMessage(n);
                     if (msg == null) continue;
+                    if (this.nodeNumber == 3 && n.nodeNumber == 0) {
+                        System.out.println(this.nodeNumber + " reading non-null message from: " + n.nodeNumber + ": " + msg.toString());
+                    }
                     switch (msg.msgType) {
                         case REQUEST:
                             Request oldReq = requestQueue.peek();
