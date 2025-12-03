@@ -43,7 +43,7 @@ public class Connection {
         }
         catch (Exception e) {
             //e.printStackTrace();
-            System.out.println("Something went wrong reading message");
+            //System.out.println("Something went wrong reading message");
             return null;
         }
     }
