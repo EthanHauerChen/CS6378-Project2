@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class Node {
     String hostname;
@@ -17,7 +18,7 @@ public class Node {
     int numRequests;
     //int granted; //this.nodeNumber if no processes need grant, else node number of process being granted
     HashMap<Integer, Neighbor> qMembers;
-    PriorityQueue<Request> requestQueue;
+    PriorityBlockingQueue<Request> requestQueue;
     private int clock;
 
     private class Request implements Comparable {
@@ -59,7 +60,7 @@ public class Node {
         this.numRequests = numRequests;
         addQMembers(qMembers);
         clock = 0;
-        requestQueue = new PriorityQueue<>();
+        requestQueue = new PriorityBlockingQueue<>();
         this.qMembers.get(this.nodeNumber).granted = true;
     }
     private void addQMembers (Neighbor[] members) {
