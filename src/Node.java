@@ -355,9 +355,9 @@ public class Node {
             if (n.nodeNumber == this.nodeNumber) continue;
             read[i] = new Thread(() -> {
                 long start = System.currentTimeMillis();
-                int numExited = 0; //number of EXIT messages received
+                boolean rcvdExit = false;
                 boolean hasFailed = false; //if received a failed message from another quorum member
-                while (numExited < qMembers.size() - 1) { //-1 because this node is also part of qMembers
+                while (!rcvdExit) { 
                     Message msg = readMessage(n);
                     if (msg == null) continue;
                     //if (this.nodeNumber == 3 && n.nodeNumber == 0) {
@@ -425,7 +425,7 @@ public class Node {
                             }
                             break;
                         case EXIT:
-                            numExited++;
+                            rcvdExit = true;
                             break;
                         }
                     }
