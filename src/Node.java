@@ -213,14 +213,13 @@ public class Node {
     private void incrementClock() { clock++; }
 
     private boolean canEnter() {
-        if (requestQueue.isEmpty()) return true; //not necessary to check since this node's request is added to queue in csEnter, but here for clarity
-        else if (requestQueue.peek().nodeNumber != this.nodeNumber) {
-            //if (this.nodeNumber == 3) {
-            System.out.print(this.nodeNumber + " canEnter false. not at top of queue: ");
-            printQueue();
-            //}
-            return false;
-        }
+        // if (requestQueue.peek().nodeNumber != this.nodeNumber) {
+        //     //if (this.nodeNumber == 3) {
+        //     System.out.print(this.nodeNumber + " canEnter false. not at top of queue: ");
+        //     printQueue();
+        //     //}
+        //     return false;
+        // }
         for (Neighbor n : this.qMembers.values()) {
             if (!n.granted) {
                 //if (this.nodeNumber == 3) {
@@ -359,7 +358,12 @@ public class Node {
                 boolean hasFailed = false; //if received a failed message from another quorum member
                 while (!rcvdExit) { 
                     Message msg = readMessage(n);
-                    if (msg == null) continue;
+                    if (msg == null) {
+                        try { //retry after waiting .01 seconds
+                            Thread.sleep(10); 
+                        }
+                        catch (InterruptedException e) {}
+                    }
                     //if (this.nodeNumber == 3 && n.nodeNumber == 0) {
                         System.out.println(this.nodeNumber + " reading non-null message from: " + n.nodeNumber + ": " + msg.toString());
                     //}
@@ -421,7 +425,7 @@ public class Node {
                             hasFailed = true;
                             if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
                                 //printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
-                                sendMessage(MessageType.YIELD, -1, requestQueue.peek().nodeNumber);
+                                sendMessage(MessageType.GRANT, -1, requestQueue.peek().nodeNumber);
                             }
                             break;
                         case EXIT:
