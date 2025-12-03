@@ -428,6 +428,10 @@ public class Node {
                             break;
                         }
                     }
+                    try { //retry after waiting .01 seconds
+                        Thread.sleep(10); 
+                    }
+                    catch (InterruptedException e) {}
 
                     // if (System.currentTimeMillis() - start > 15000) { //timeout
                     //     attemptExit();
