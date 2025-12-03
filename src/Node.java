@@ -361,6 +361,7 @@ public class Node {
                     if (msg == null) {
                         try { //retry after waiting .01 seconds
                             Thread.sleep(10); 
+                            continue;
                         }
                         catch (InterruptedException e) {}
                     }
