@@ -423,6 +423,10 @@ public class Node {
                             }
                             break;
                         case INQUIRE:
+                            if (this.nodeNumber == 3) {
+                                System.out.print("3 INQUIRE from " + n.nodeNumber + ". hasFailed = " + hasFailed + " ");
+                                printQueue();
+                            }
                             if (hasFailed) {
                                 n.granted = false;
                                 //printDebug(n.nodeNumber, MessageType.YIELD);
