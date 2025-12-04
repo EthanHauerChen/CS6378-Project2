@@ -361,6 +361,7 @@ public class Node {
                     }
                 }
                 csLeave(); //inform other nodes that critical section is available
+                System.out.println(this.nodeNumber + " completed " + i + " cs requests");
 
                 try {
                     Thread.sleep(this.interRequestDelay);
