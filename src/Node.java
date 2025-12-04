@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
@@ -260,30 +261,43 @@ public class Node {
      * */
     private void proveMutualExclusion() {
         String remoteUser = "ehc180001";
-        String remoteHost = "dc01.utdallas.edu"; // machine holding the shared file
-        String remoteFile = "~/6378/Project2/mutex_output";
+        String remoteHost = "dc01.utdallas.edu";
+        String remoteFile = "/home/010/e/eh/ehc180001/6378/Project2/mutex_output";
 
-        // Build the repeated nodeNumber string (same line)
-        String repeated = String.join(" ", Collections.nCopies(10, "" + this.nodeNumber));
+        String repeated = String.join(" ", Collections.nCopies(10, ""+this.nodeNumber));
 
-        // Escape it correctly for SSH + remote shell
-        String command = String.format(
+        String sshCommand = String.format(
             "ssh %s@%s \"echo '%s' >> %s\"",
             remoteUser, remoteHost, repeated, remoteFile
         );
 
         try {
-            Process p = Runtime.getRuntime().exec(command);
+            // Run through shell so quotes are interpreted correctly
+            Process p = Runtime.getRuntime().exec(new String[] { "sh", "-c", sshCommand });
+
             int exit = p.waitFor();
 
             if (exit == 0) {
-                System.out.println(this.nodeNumber + " wrote its line via SSH");
+                System.out.println("Node 10 wrote its line via SSH");
             } else {
-                System.err.println("SSH append failed for node " + this.nodeNumber);
+                System.err.println("SSH append failed for node 10");
+
+                // Print stderr output from the SSH process
+                try (InputStream err = p.getErrorStream()) {
+                    System.err.println("SSH STDERR:");
+                }
+
+                // Print stdout too (optional)
+                try (InputStream out = p.getInputStream()) {
+                    System.err.println("SSH STDOUT:");
+                }
             }
 
-        } catch (Exception e) {
-            System.err.println("SSH error: " + e);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // restore interrupt flag
+            e.printStackTrace();
         }
     }
 
