@@ -323,7 +323,7 @@ public class Node {
         }
     
         //enter CS
-        proveMutualExclusion();
+        //proveMutualExclusion(); //uncomment to test ME correctness
         return true;
     }
 
