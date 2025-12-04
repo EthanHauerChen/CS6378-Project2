@@ -261,7 +261,7 @@ public class Node {
     private void proveMutualExclusion() {
         String remoteUser = "ehc180001";
         String remoteHost = "dc01.utdallas.edu"; // machine holding the shared file
-        String remoteFile = "/home/6378/Project2/mutex_output";
+        String remoteFile = "~/6378/Project2/mutex_output";
 
         // Build the repeated nodeNumber string (same line)
         String repeated = String.join(" ", Collections.nCopies(10, "" + this.nodeNumber));
