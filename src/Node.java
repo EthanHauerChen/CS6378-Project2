@@ -336,8 +336,8 @@ public class Node {
     }
 
     private void printDebug(int to, MessageType msg) {
-        System.out.print("node " + this.nodeNumber + " " + msg + " to " + to + ", Queue" + this.nodeNumber + ": ");
-        printQueue();
+        // System.out.print("node " + this.nodeNumber + " " + msg + " to " + to + ", Queue" + this.nodeNumber + ": ");
+        // printQueue();
     }
     private void printQueue() {
         System.out.println(requestQueue.toString() + ", clock: " + this.clock);
