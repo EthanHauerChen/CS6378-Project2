@@ -105,6 +105,7 @@ public class Node {
             long start = System.currentTimeMillis();
             for (int i = 0; i < numSmaller; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
                 Socket client = serverSocket.accept();
+                client.setSoTimeout(100);
                 final int iCopy = i;
                 accepts[i] = new Thread(() -> {
                     try {
@@ -157,6 +158,7 @@ public class Node {
                 try {
                     if (neighbor.nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
                         Socket client = new Socket(neighbor.hostname, neighbor.port);
+                        client.setSoTimeout(100);
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         neighbor.addConnection(new Connection(client, in, out));
