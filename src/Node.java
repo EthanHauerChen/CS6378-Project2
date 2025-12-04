@@ -243,6 +243,9 @@ public class Node {
         if (notGranted.size() > 0) {
             System.out.print(this.nodeNumber + " canEnter false. " + notGranted.toString() + " not granted. queue: ");
             printQueue();
+            if (requestQueue.peek() != null && requestQueue.peek().nodeNumber != this.nodeNumber) {
+                System.out.println(" top of queue: " + requestQueue.peek().toString());
+            }
         }
         return returnVal && this.qMembers.get(this.nodeNumber).granted;
     }
@@ -411,8 +414,18 @@ public class Node {
                             }
                             break;
                         case GRANT:
-                        case YIELD:
                             n.granted = true;
+                        case YIELD:
+                            Request topReq = requestQueue.peek();
+                            if (topReq != null) {
+                                if (topReq.nodeNumber == this.nodeNumber) {
+                                    n.granted = true;
+                                }
+                                else {
+                                    //might have to be a grant message
+                                    sendMessage(MessageType.YIELD, this.clock, topReq.nodeNumber);
+                                }
+                            }
                             //if (this.nodeNumber == 3) 
                                 System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
                             break;
