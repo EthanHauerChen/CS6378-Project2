@@ -207,6 +207,11 @@ public class Node {
             return;
         }
 
+        try {
+            Thread.sleep(10000);
+        }
+        catch (InterruptedException e) {}
+
         System.out.println("Node " + this.nodeNumber + " establishConnections terminated");
         return;
     }
