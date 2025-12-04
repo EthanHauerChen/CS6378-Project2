@@ -70,7 +70,7 @@ public class Connection {
         while (System.currentTimeMillis() - start < 10000) {
             try {
                 ((ObjectOutputStream)out).writeObject(msg);
-                this.flush();
+                this.out.flush();
                 return true;
             }
             catch (IOException e) {

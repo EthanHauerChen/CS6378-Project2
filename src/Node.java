@@ -166,6 +166,7 @@ public class Node {
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         neighbor.addConnection(new Connection(client, in, out));
                         out.writeObject((Integer)this.nodeNumber); //once connected, send node_number as initial message
+                        out.flush();
                         neighbor.connection.flush();
                         System.out.println("Node " + this.nodeNumber + " wrote " + this.nodeNumber + " to " + neighbor.nodeNumber);
                     }
