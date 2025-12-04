@@ -49,6 +49,7 @@ public class Connection {
         }
         catch (IOException | ClassNotFoundException e) {
             System.out.println("Something went wrong reading message");
+            e.printStackTrace();
             return null;
         }
     }
