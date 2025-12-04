@@ -378,7 +378,7 @@ public class Node {
         Thread read = new Thread(() -> {
             long start = System.currentTimeMillis();
             int numExited = 0;
-            while (numExited <= this.qMembers.size() - 1) { //qMembers includes itself, hence -1
+            while (numExited < this.qMembers.size() - 1) { //qMembers includes itself, hence -1
                 Message msg = readMessage();
                 if (msg == null) {
                     try { //retry after waiting .01 seconds
