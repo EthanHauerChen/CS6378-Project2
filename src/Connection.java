@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 public class Connection {
     private Socket socket; //only stored so that close() can be called. should not interface with socket directly, only with in and out
@@ -41,8 +42,12 @@ public class Connection {
             Message m = (Message) (((ObjectInputStream)in).readObject());
             return m;
         }
-        catch (Exception e) {
+        catch (SocketTimeoutException e) {
             //e.printStackTrace();
+            //no data available right now
+            return null;
+        }
+        catch (Exception e) {
             System.out.println("Something went wrong reading message");
             return null;
         }
