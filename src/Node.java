@@ -465,6 +465,7 @@ public class Node {
                         }
                         break;
                     case EXIT:
+                        System.out.println(this.nodeNumber + " EXIT from " + n.nodeNumber);
                         numExited++;
                         break;
                     }
