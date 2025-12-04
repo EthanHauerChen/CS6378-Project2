@@ -243,9 +243,6 @@ public class Node {
         if (notGranted.size() > 0) {
             System.out.print(this.nodeNumber + " canEnter false. " + notGranted.toString() + " not granted. queue: ");
             printQueue();
-            if (requestQueue.peek() != null && requestQueue.peek().nodeNumber != this.nodeNumber) {
-                System.out.println(" top of queue: " + requestQueue.peek().toString());
-            }
         }
         return returnVal && this.qMembers.get(this.nodeNumber).granted;
     }
