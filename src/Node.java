@@ -1,8 +1,10 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -228,16 +230,21 @@ public class Node {
         //     //}
         //     return false;
         // }
+        boolean returnVal = true;
+        ArrayList<Integer> notGranted = new ArrayList<>();
         for (Neighbor n : this.qMembers.values()) {
             if (!n.granted) {
                 //if (this.nodeNumber == 3) {
-                System.out.print(this.nodeNumber + " canEnter false. " + n.nodeNumber + " not granted. queue: ");
-                printQueue();
+                notGranted.add(n.nodeNumber);
                 //}
-                return false;
+                returnVal = false;
             }
         }
-        return this.qMembers.get(this.nodeNumber).granted;
+        if (notGranted.size() > 0) {
+            System.out.print(this.nodeNumber + " canEnter false. " + notGranted.toString() + " not granted. queue: ");
+            printQueue();
+        }
+        return returnVal && this.qMembers.get(this.nodeNumber).granted;
     }
 
     private boolean csEnter() {
