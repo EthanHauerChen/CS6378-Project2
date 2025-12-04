@@ -110,6 +110,7 @@ public class Node {
                 accepts[i] = new Thread(() -> {
                     try {
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                        out.flush();
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         int nodenum = in.readInt();
                         connectedNodes[iCopy] = nodenum;
@@ -160,6 +161,7 @@ public class Node {
                         Socket client = new Socket(neighbor.hostname, neighbor.port);
                         client.setSoTimeout(100);
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+                        out.flush();
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         neighbor.addConnection(new Connection(client, in, out));
                         neighbor.connection.writeInt(this.nodeNumber); //once connected, send node_number as initial message
