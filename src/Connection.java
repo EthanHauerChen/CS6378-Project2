@@ -1,3 +1,4 @@
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInput;
@@ -5,17 +6,55 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.BlockingQueue;
 
 public class Connection {
     private Socket socket; //only stored so that close() can be called. should not interface with socket directly, only with in and out
-    InputStream in;
-    OutputStream out;
+    final ObjectInputStream in;
+    final ObjectOutputStream out;
 
-    public Connection(Socket s, InputStream i, OutputStream o) {
+    private BlockingQueue<Message> inbox;
+
+    public Connection(Socket s, ObjectInputStream i, ObjectOutputStream o, BlockingQueue<Message> inbox) {
         socket = s;
         in = i;
         out = o;
+        this.inbox = inbox;
+
+        startReaderThread();
+    }
+
+    private void startReaderThread() {
+        Thread t = new Thread(() -> {
+            try {
+                while (true) {
+                    Message msg = (Message) in.readObject(); // safe to block here
+                    inbox.add(msg);
+                }
+            } catch (SocketException e) {
+                // connection closed normally
+            } catch (EOFException e) {
+                // remote side closed
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        });
+
+        t.start();
+    }
+
+    //non blocking
+    public Message getNextMessage() {
+        if (inbox.isEmpty()) return null;
+        return inbox.poll();
+    }
+
+    // Blocking write
+    public synchronized void sendMessage(Message msg) throws IOException {
+        out.writeObject(msg);
+        out.flush();
     }
 
     public void flush() throws IOException {

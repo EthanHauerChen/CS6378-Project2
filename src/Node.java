@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.PriorityQueue;
+//import java.util.PriorityQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 public class Node {
@@ -20,7 +21,8 @@ public class Node {
     int numRequests;
     //int granted; //this.nodeNumber if no processes need grant, else node number of process being granted
     HashMap<Integer, Neighbor> qMembers;
-    PriorityBlockingQueue<Request> requestQueue;
+    LinkedBlockingQueue<Message> inbox; //queue that stores all incoming messages
+    PriorityBlockingQueue<Request> requestQueue; 
     private int clock;
     private boolean hasFailed;
 
@@ -63,6 +65,7 @@ public class Node {
         this.numRequests = numRequests;
         addQMembers(qMembers);
         clock = 0;
+        inbox = new LinkedBlockingQueue<>();
         requestQueue = new PriorityBlockingQueue<>();
         this.qMembers.get(this.nodeNumber).granted = true;
         hasFailed = false;
@@ -105,7 +108,6 @@ public class Node {
             long start = System.currentTimeMillis();
             for (int i = 0; i < numSmaller; i++) { //bind to neighbors with larger IDs, doesn't actually bind to node i, but will guarantee that it calls accept() the correct number of times
                 Socket client = serverSocket.accept();
-                client.setSoTimeout(100);
                 final int iCopy = i;
                 accepts[i] = new Thread(() -> {
                     try {
@@ -115,7 +117,7 @@ public class Node {
                         int nodenum = -1;
                         try { nodenum = (Integer) in.readObject(); } catch (ClassNotFoundException e) {}
                         connectedNodes[iCopy] = nodenum;
-                        qMembers.get(nodenum).addConnection(new Connection(client, in, out)); //connecting client must send their node number once accepted
+                        qMembers.get(nodenum).addConnection(new Connection(client, in, out, inbox)); //connecting client must send their node number once accepted
                         System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
 
                         if (System.currentTimeMillis() - start > 15000) { //if timeout, then close all connections, exit
@@ -164,7 +166,7 @@ public class Node {
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         out.flush();
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                        neighbor.addConnection(new Connection(client, in, out));
+                        neighbor.addConnection(new Connection(client, in, out, inbox));
                         out.writeObject((Integer)this.nodeNumber); //once connected, send node_number as initial message
                         out.flush();
                         neighbor.connection.flush();
