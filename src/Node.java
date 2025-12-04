@@ -162,7 +162,6 @@ public class Node {
                 try {
                     if (neighbor.nodeNumber > this.nodeNumber) { //if this.nodeNumber < neighbor, bind socket
                         Socket client = new Socket(neighbor.hostname, neighbor.port);
-                        client.setSoTimeout(100);
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         out.flush();
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
