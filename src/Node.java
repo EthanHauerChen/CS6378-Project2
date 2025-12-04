@@ -247,10 +247,10 @@ public class Node {
                 returnVal = false;
             }
         }
-        if (notGranted.size() > 0) {
-            System.out.print(this.nodeNumber + " canEnter false. " + notGranted.toString() + " not granted. queue: ");
-            printQueue();
-        }
+        // if (notGranted.size() > 0) {
+        //     System.out.print(this.nodeNumber + " canEnter false. " + notGranted.toString() + " not granted. queue: ");
+        //     printQueue();
+        // }
         return returnVal && this.qMembers.get(this.nodeNumber).granted;
     }
 
