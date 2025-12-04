@@ -539,12 +539,12 @@ public class Node {
         long start = System.currentTimeMillis();
         cs.start();
         read.start();
-        long end = System.currentTimeMillis() - start;
-        System.out.println("execution time: " + end + " ms");
 
         try {
             cs.join();
             read.join();
+            long end = System.currentTimeMillis() - start;
+            System.out.println("execution time: " + end + " ms");
         }
         catch (InterruptedException e) {
             System.out.println("Unable to join cs or read thread");
