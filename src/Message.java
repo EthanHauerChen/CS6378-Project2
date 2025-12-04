@@ -4,10 +4,12 @@ import java.io.Serializable;
 public class Message implements Serializable {
     MessageType msgType;
     int clock;
+    int nodeNumber;
 
-    public Message(MessageType msg, int clock) {
+    public Message(MessageType msg, int clock, int nodeNumber) {
         this.msgType = msg;
         this.clock = clock;
+        this.nodeNumber = nodeNumber;
     }
 
     @Override

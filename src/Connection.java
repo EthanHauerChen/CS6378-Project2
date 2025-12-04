@@ -46,16 +46,16 @@ public class Connection {
     }
 
     //non blocking
-    public Message getNextMessage() {
+    public Message readMessage() {
         if (inbox.isEmpty()) return null;
         return inbox.poll();
     }
 
-    // Blocking write
-    public synchronized void sendMessage(Message msg) throws IOException {
-        out.writeObject(msg);
-        out.flush();
-    }
+    // // Blocking write
+    // public synchronized void sendMessage(Message msg) throws IOException {
+    //     out.writeObject(msg);
+    //     out.flush();
+    // }
 
     public void flush() throws IOException {
         out.flush();
@@ -76,22 +76,22 @@ public class Connection {
         return ((ObjectInputStream)in).readInt();
     }
 
-    public Message readMessage() {
-        try {
-            Message m = (Message) (((ObjectInputStream)in).readObject());
-            return m;
-        }
-        catch (SocketTimeoutException e) {
-            //e.printStackTrace();
-            //no data available right now
-            return null;
-        }
-        catch (IOException | ClassNotFoundException e) {
-            System.out.println("Something went wrong reading message");
-            e.printStackTrace();
-            return null;
-        }
-    }
+    // public Message readMessage() {
+    //     try {
+    //         Message m = (Message) (((ObjectInputStream)in).readObject());
+    //         return m;
+    //     }
+    //     catch (SocketTimeoutException e) {
+    //         //e.printStackTrace();
+    //         //no data available right now
+    //         return null;
+    //     }
+    //     catch (IOException | ClassNotFoundException e) {
+    //         System.out.println("Something went wrong reading message");
+    //         e.printStackTrace();
+    //         return null;
+    //     }
+    // }
 
     public void writeInt(int output) throws IOException {
         if (out instanceof ObjectOutputStream) ((ObjectOutputStream)out).writeInt(output);
@@ -104,11 +104,12 @@ public class Connection {
         out.flush();
     }
 
-    public boolean writeMessage(Message msg) {
+    //blocking write
+    public synchronized boolean writeMessage(Message msg) {
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < 10000) {
             try {
-                ((ObjectOutputStream)out).writeObject(msg);
+                this.out.writeObject(msg);
                 this.out.flush();
                 return true;
             }

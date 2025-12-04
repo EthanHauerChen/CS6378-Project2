@@ -287,9 +287,9 @@ public class Node {
         printQueue();
         if (!requestQueue.isEmpty() && nextReq.nodeNumber != this.nodeNumber) {
             sendMessage(MessageType.GRANT, this.clock, nextReq.nodeNumber);
-            if (this.nodeNumber == 0 && nextReq.nodeNumber == 3) {
-                System.out.println(nextReq.nodeNumber + ": " + this.qMembers.get(nextReq));
-            }
+            // if (this.nodeNumber == 0 && nextReq.nodeNumber == 3) {
+            //     System.out.println(nextReq.nodeNumber + ": " + this.qMembers.get(nextReq));
+            // }
         }
         return;
     }
@@ -301,7 +301,7 @@ public class Node {
         if (type == MessageType.REQUEST || type == MessageType.RELEASE) {
             for (Neighbor n : this.qMembers.values()) {
                 if (n.nodeNumber == this.nodeNumber) continue;
-                if (!n.connection.writeMessage(new Message(type, clock))) {
+                if (!n.connection.writeMessage(new Message(type, clock, this.nodeNumber))) {
                     attemptExit();
                     closeConnections();
                     System.out.println(this.nodeNumber + " failed to write message, abort protocol");
@@ -314,8 +314,8 @@ public class Node {
         }
     }
     private void sendMessage(MessageType type, int clock, int dest) {
-        if (this.nodeNumber == 0 && dest == 3) System.out.println(this.nodeNumber + " sending " + new Message(type, clock));
-        if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock))) {
+        if (this.nodeNumber == 0 && dest == 3) System.out.println(this.nodeNumber + " sending " + new Message(type, clock, this.nodeNumber));
+        if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock, this.nodeNumber))) {
             attemptExit();
             closeConnections();
             System.out.println(this.nodeNumber + " failed to write message, abort protocol");
@@ -326,12 +326,13 @@ public class Node {
     private void attemptExit() {
         for (Neighbor n : this.qMembers.values()) {
             if (n.nodeNumber == this.nodeNumber) continue;
-            n.connection.writeMessage(new Message(MessageType.EXIT, this.clock));
+            n.connection.writeMessage(new Message(MessageType.EXIT, this.clock, this.nodeNumber));
         }
     }
 
-    private Message readMessage(Neighbor n) {
-        return n.connection.readMessage();
+    private Message readMessage() {
+        if (inbox.isEmpty()) return null;
+        return inbox.poll();
     }
 
     private void printDebug(int to, MessageType msg) {
@@ -371,119 +372,115 @@ public class Node {
             broadcastMessage(MessageType.EXIT);
         });
 
-        Thread[] read = new Thread[this.qMembers.size() - 1]; //do not include yourself, hence -1
-        int i = 0;
-        for (Neighbor n : this.qMembers.values()) {
-            if (n.nodeNumber == this.nodeNumber) continue;
-            read[i] = new Thread(() -> {
-                long start = System.currentTimeMillis();
-                boolean rcvdExit = false;
-                while (!rcvdExit) { 
-                    Message msg = readMessage(n);
-                    if (msg == null) {
-                        try { //retry after waiting .01 seconds
-                            Thread.sleep(10); 
-                            continue;
-                        }
-                        catch (InterruptedException e) {}
-                    }
-                    //if (this.nodeNumber == 3 && n.nodeNumber == 0) {
-                        System.out.println(this.nodeNumber + " reading non-null message from: " + n.nodeNumber + ": " + msg.toString());
-                    //}
-                    switch (msg.msgType) {
-                        case REQUEST:
-                            Request oldReq = requestQueue.peek();
-                            Request newReq = new Request(n.nodeNumber, msg.clock);
-                            this.clock = Math.max(this.clock, newReq.timestamp) + 1;
-                            requestQueue.add(newReq);
-                            if (oldReq == null) {
-                                //printDebug(newReq.nodeNumber, MessageType.GRANT);
-                                sendMessage(MessageType.GRANT, this.clock, newReq.nodeNumber); //if only request in queue, grant
-                            }
-                            else if (oldReq.compareTo(newReq) > 0) {
-                                if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
-                                    this.qMembers.get(this.nodeNumber).granted = false;
-                                    hasFailed = true;
-                                    //printDebug(newReq.nodeNumber, MessageType.GRANT);
-                                    sendMessage(MessageType.GRANT, this.clock, newReq.nodeNumber);
-                                }
-                                else if (oldReq.nodeNumber != this.nodeNumber) {
-                                    //printDebug(oldReq.nodeNumber, MessageType.INQUIRE);
-                                    sendMessage(MessageType.INQUIRE, this.clock, oldReq.nodeNumber);
-                                }
-                            }
-                            else {
-                                //printDebug(newReq.nodeNumber, MessageType.FAILED);
-                                sendMessage(MessageType.FAILED, this.clock, newReq.nodeNumber);
-                            }
-                            break;
-                        case GRANT:
-                            n.granted = true;
-                        case YIELD:
-                            Request topReq = requestQueue.peek();
-                            if (topReq != null) {
-                                if (topReq.nodeNumber == this.nodeNumber) {
-                                    n.granted = true;
-                                }
-                                else {
-                                    //might have to be a grant message
-                                    sendMessage(MessageType.GRANT, this.clock, topReq.nodeNumber);
-                                }
-                            }
-                            //if (this.nodeNumber == 3) 
-                                System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
-                            break;
-                        case RELEASE:
-                            /** can't simply remove top of queue since the process that sent the release message is not guaranteed
-                            to be at the top of queue. For example, if a process enters the CS and then later a quorum member receives a request with a smaller
-                            timestamp, then there would be a smaller timestamp in the queue*/
-                            requestQueue.remove(new Request(n.nodeNumber, -1)); 
-                            if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) {
-                                this.qMembers.get(this.nodeNumber).granted = true;
-                                //maybe (as well, not replace above): this.qMembers.get(n.nodeNumber).granted = true;
-                            }
-                            else {
-                                sendMessage(MessageType.GRANT, this.clock, requestQueue.peek().nodeNumber);
-                            }
-                            break;
-                        case INQUIRE:
-                            //if (this.nodeNumber == 3) {
-                                System.out.print("3 INQUIRE from " + n.nodeNumber + ". hasFailed = " + hasFailed + " ");
-                                printQueue();
-                            //}
-                            if (hasFailed) {
-                                n.granted = false;
-                                //printDebug(n.nodeNumber, MessageType.YIELD);
-                                sendMessage(MessageType.YIELD, this.clock, n.nodeNumber);
-                            }
-                            break;
-                        case FAILED:
-                            n.granted = false; //probably not necessary
-                            hasFailed = true;
-                            if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
-                                //printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
-                                sendMessage(MessageType.GRANT, this.clock, requestQueue.peek().nodeNumber);
-                            }
-                            break;
-                        case EXIT:
-                            rcvdExit = true;
-                            break;
-                        }
-                    }
+
+        Thread read = new Thread(() -> {
+            long start = System.currentTimeMillis();
+            int numExited = 0;
+            while (numExited <= this.qMembers.size() - 1) { //qMembers includes itself, hence -1
+                Message msg = readMessage();
+                if (msg == null) {
                     try { //retry after waiting .01 seconds
                         Thread.sleep(10); 
+                        continue;
                     }
                     catch (InterruptedException e) {}
+                }
+                //if (this.nodeNumber == 3 && n.nodeNumber == 0) {
+                    System.out.println(this.nodeNumber + " reading non-null message from: " + msg.nodeNumber + ": " + msg.toString());
+                //}
+                Neighbor n = qMembers.get(msg.nodeNumber); //neighbor that sent the current message
+                switch (msg.msgType) {
+                    case REQUEST:
+                        Request oldReq = requestQueue.peek();
+                        Request newReq = new Request(n.nodeNumber, msg.clock);
+                        this.clock = Math.max(this.clock, newReq.timestamp) + 1;
+                        requestQueue.add(newReq);
+                        if (oldReq == null) {
+                            //printDebug(newReq.nodeNumber, MessageType.GRANT);
+                            sendMessage(MessageType.GRANT, this.clock, newReq.nodeNumber); //if only request in queue, grant
+                        }
+                        else if (oldReq.compareTo(newReq) > 0) {
+                            if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
+                                n.granted = false;
+                                hasFailed = true;
+                                //printDebug(newReq.nodeNumber, MessageType.GRANT);
+                                sendMessage(MessageType.GRANT, this.clock, newReq.nodeNumber);
+                            }
+                            else if (oldReq.nodeNumber != this.nodeNumber) {
+                                //printDebug(oldReq.nodeNumber, MessageType.INQUIRE);
+                                sendMessage(MessageType.INQUIRE, this.clock, oldReq.nodeNumber);
+                            }
+                        }
+                        else {
+                            //printDebug(newReq.nodeNumber, MessageType.FAILED);
+                            sendMessage(MessageType.FAILED, this.clock, newReq.nodeNumber);
+                        }
+                        break;
+                    case GRANT:
+                        n.granted = true;
+                    case YIELD:
+                        Request topReq = requestQueue.peek();
+                        if (topReq != null) {
+                            if (topReq.nodeNumber == this.nodeNumber) {
+                                n.granted = true;
+                            }
+                            else {
+                                //might have to be a grant message
+                                sendMessage(MessageType.GRANT, this.clock, topReq.nodeNumber);
+                            }
+                        }
+                        //if (this.nodeNumber == 3) 
+                            System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
+                        break;
+                    case RELEASE:
+                        /** can't simply remove top of queue since the process that sent the release message is not guaranteed
+                        to be at the top of queue. For example, if a process enters the CS and then later a quorum member receives a request with a smaller
+                        timestamp, then there would be a smaller timestamp in the queue*/
+                        requestQueue.remove(new Request(n.nodeNumber, -1)); 
+                        if (requestQueue.isEmpty() || requestQueue.peek().nodeNumber == this.nodeNumber) {
+                            this.qMembers.get(this.nodeNumber).granted = true;
+                            //maybe (as well, not replace above): this.qMembers.get(n.nodeNumber).granted = true;
+                        }
+                        else {
+                            sendMessage(MessageType.GRANT, this.clock, requestQueue.peek().nodeNumber);
+                        }
+                        break;
+                    case INQUIRE:
+                        //if (this.nodeNumber == 3) {
+                            System.out.print(this.nodeNumber + " INQUIRE from " + n.nodeNumber + ". hasFailed = " + hasFailed + " ");
+                            printQueue();
+                        //}
+                        if (hasFailed) {
+                            n.granted = false;
+                            //printDebug(n.nodeNumber, MessageType.YIELD);
+                            sendMessage(MessageType.YIELD, this.clock, n.nodeNumber);
+                        }
+                        break;
+                    case FAILED:
+                        n.granted = false; //probably not necessary
+                        hasFailed = true;
+                        if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
+                            //printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
+                            sendMessage(MessageType.GRANT, this.clock, requestQueue.peek().nodeNumber);
+                        }
+                        break;
+                    case EXIT:
+                        numExited++;
+                        break;
+                    }
+                }
+                try { //retry after waiting .01 seconds
+                    Thread.sleep(10); 
+                }
+                catch (InterruptedException e) {}
 
-                    // if (System.currentTimeMillis() - start > 15000) { //timeout
-                    //     attemptExit();
-                    //     closeConnections();
-                    //     System.out.println(this.nodeNumber + " timeout inside the read thread");
-                    //     return;
-                    // }
-            });
-            i++;
-        }
+                // if (System.currentTimeMillis() - start > 15000) { //timeout
+                //     attemptExit();
+                //     closeConnections();
+                //     System.out.println(this.nodeNumber + " timeout inside the read thread");
+                //     return;
+                // }
+        });
 
         /** Thread for granting critical section requests to membership set*/
         // Thread read = new Thread(() -> {
@@ -574,11 +571,11 @@ public class Node {
         // });
 
         cs.start();
-        for (Thread r : read) r.start();
+        read.start();
 
         try {
             cs.join();
-            for (Thread r : read) r.join();
+            read.join();
         }
         catch (InterruptedException e) {
             System.out.println("Unable to join cs or read thread");
