@@ -112,7 +112,8 @@ public class Node {
                         ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                         out.flush();
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-                        int nodenum = in.readInt();
+                        int nodenum = -1;
+                        try { nodenum = (Integer) in.readObject(); } catch (ClassNotFoundException e) {}
                         connectedNodes[iCopy] = nodenum;
                         qMembers.get(nodenum).addConnection(new Connection(client, in, out)); //connecting client must send their node number once accepted
                         System.out.println("Node " + this.nodeNumber + " read " + nodenum + " from " + nodenum);
@@ -164,7 +165,7 @@ public class Node {
                         out.flush();
                         ObjectInputStream in = new ObjectInputStream(client.getInputStream());
                         neighbor.addConnection(new Connection(client, in, out));
-                        neighbor.connection.writeInt(this.nodeNumber); //once connected, send node_number as initial message
+                        out.writeObject((Integer)this.nodeNumber); //once connected, send node_number as initial message
                         neighbor.connection.flush();
                         System.out.println("Node " + this.nodeNumber + " wrote " + this.nodeNumber + " to " + neighbor.nodeNumber);
                     }
