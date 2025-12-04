@@ -254,6 +254,40 @@ public class Node {
         return returnVal && this.qMembers.get(this.nodeNumber).granted;
     }
 
+    /** method that writes to a single shared file between all nodes. if 
+     * each line only contains the same number, then ME worked
+     * */
+    private void proveMutualExclusion() {
+        String remoteUser = "ehc180001";
+        String remoteHost = "dc01.utdallas.edu"; // machine holding the shared file
+        String remoteFile = "/home/6378/Project2/mutex_output";
+
+        // Build the repeated nodeNumber string (same line)
+        String repeated = (this.nodeNumber + " ").repeat(10).trim();
+
+        // Escape it correctly for SSH + remote shell
+        String command = String.format(
+            "ssh %s@%s \"echo '%s' >> %s\"",
+            remoteUser, remoteHost, repeated, remoteFile
+        );
+
+        try {
+            Process p = Runtime.getRuntime().exec(command);
+            int exit = p.waitFor();
+
+            if (exit == 0) {
+                System.out.println(this.nodeNumber + " wrote its line via SSH");
+            } else {
+                System.err.println("SSH append failed for node " + this.nodeNumber);
+            }
+
+        } catch (Exception e) {
+            System.err.println("SSH error: " + e);
+        }
+    }
+
+
+
     private boolean csEnter() {
         broadcastMessage(MessageType.REQUEST, clock); //send CS request to all quorum members
         requestQueue.add(new Request(this.nodeNumber, clock++)); //add own request to queue
@@ -274,6 +308,7 @@ public class Node {
         }
     
         //enter CS
+        proveMutualExclusion();
         return true;
     }
 
