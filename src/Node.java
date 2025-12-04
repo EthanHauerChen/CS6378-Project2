@@ -278,9 +278,9 @@ public class Node {
             int exit = p.waitFor();
 
             if (exit == 0) {
-                System.out.println("Node 10 wrote its line via SSH");
+                //System.out.println("Node 10 wrote its line via SSH");
             } else {
-                System.err.println("SSH append failed for node 10");
+                //System.err.println("SSH append failed for node 10");
 
                 // Print stderr output from the SSH process
                 try (InputStream err = p.getErrorStream()) {
@@ -333,7 +333,7 @@ public class Node {
         for (Neighbor n : this.qMembers.values()) n.granted = false;
         requestQueue.remove(new Request(this.nodeNumber, this.clock)); //remove own request from queue. can use timestamp -1 since equals() only compares nodeNumber, and that is fine because only 1 of this node's requests can be in queue at a time
         Request nextReq = requestQueue.peek();
-        System.out.print(this.nodeNumber + " csLeave. Queue after removing own req: ");
+        //System.out.print(this.nodeNumber + " csLeave. Queue after removing own req: ");
         printQueue();
         if (!requestQueue.isEmpty() && nextReq.nodeNumber != this.nodeNumber) {
             sendMessage(MessageType.GRANT, this.clock, nextReq.nodeNumber);
@@ -354,7 +354,7 @@ public class Node {
                 if (!n.connection.writeMessage(new Message(type, clock, this.nodeNumber))) {
                     attemptExit();
                     closeConnections();
-                    System.out.println(this.nodeNumber + " failed to write message, abort protocol");
+                    //System.out.println(this.nodeNumber + " failed to write message, abort protocol");
                     System.exit(-1);
                 }
                 else {
@@ -364,11 +364,11 @@ public class Node {
         }
     }
     private void sendMessage(MessageType type, int clock, int dest) {
-        if (this.nodeNumber == 0 && dest == 3) System.out.println(this.nodeNumber + " sending " + new Message(type, clock, this.nodeNumber));
+        //if (this.nodeNumber == 0 && dest == 3) System.out.println(this.nodeNumber + " sending " + new Message(type, clock, this.nodeNumber));
         if (!this.qMembers.get(dest).connection.writeMessage(new Message(type, clock, this.nodeNumber))) {
             attemptExit();
             closeConnections();
-            System.out.println(this.nodeNumber + " failed to write message, abort protocol");
+            //System.out.println(this.nodeNumber + " failed to write message, abort protocol");
             System.exit(-1);
         }
         printDebug(dest, type);
@@ -390,7 +390,7 @@ public class Node {
         // printQueue();
     }
     private void printQueue() {
-        System.out.println(requestQueue.toString() + ", clock: " + this.clock);
+        //System.out.println(requestQueue.toString() + ", clock: " + this.clock);
     }
     public void beginProtocol() {
         /** Thread for requesting critical section from quorum members*/
@@ -400,7 +400,7 @@ public class Node {
                     System.out.println(this.nodeNumber + " failed to enter CS, abort");
                     return;
                 }
-                System.out.println(this.nodeNumber + " entered CS");
+                //System.out.println(this.nodeNumber + " entered CS");
                 while (true) {
                     try {
                         Thread.sleep(this.csExecutionTime);
@@ -411,7 +411,7 @@ public class Node {
                     }
                 }
                 csLeave(); //inform other nodes that critical section is available
-                System.out.println(this.nodeNumber + " completed " + i + " cs requests");
+                //System.out.println(this.nodeNumber + " completed " + i + " cs requests");
 
                 try {
                     Thread.sleep(this.interRequestDelay);
@@ -420,7 +420,7 @@ public class Node {
                     System.out.println("interRequestDelay interrupted, proceeding to enter cs again if num requests made has not exceeded maximum");
                 }
             }
-            System.out.println(this.nodeNumber + " finished all cs requests");
+            //System.out.println(this.nodeNumber + " finished all cs requests");
             broadcastMessage(MessageType.EXIT);
         });
 
@@ -438,7 +438,7 @@ public class Node {
                     catch (InterruptedException e) {}
                 }
                 //if (this.nodeNumber == 3 && n.nodeNumber == 0) {
-                    System.out.println(this.nodeNumber + " reading non-null message from: " + msg.nodeNumber + ": " + msg.toString());
+                    //System.out.println(this.nodeNumber + " reading non-null message from: " + msg.nodeNumber + ": " + msg.toString());
                 //}
                 Neighbor n = qMembers.get(msg.nodeNumber); //neighbor that sent the current message
                 switch (msg.msgType) {
@@ -482,7 +482,7 @@ public class Node {
                             }
                         }
                         //if (this.nodeNumber == 3) 
-                            System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
+                            //System.out.println(this.nodeNumber + " GRANTED from " + n.nodeNumber + ", n.granted = " + n.granted);
                         break;
                     case RELEASE:
                         /** can't simply remove top of queue since the process that sent the release message is not guaranteed
@@ -499,8 +499,8 @@ public class Node {
                         break;
                     case INQUIRE:
                         //if (this.nodeNumber == 3) {
-                            System.out.print(this.nodeNumber + " INQUIRE from " + n.nodeNumber + ". hasFailed = " + hasFailed + " ");
-                            printQueue();
+                            //System.out.print(this.nodeNumber + " INQUIRE from " + n.nodeNumber + ". hasFailed = " + hasFailed + " ");
+                            //printQueue();
                         //}
                         if (hasFailed) {
                             n.granted = false;
@@ -517,7 +517,7 @@ public class Node {
                         }
                         break;
                     case EXIT:
-                        System.out.println(this.nodeNumber + " EXIT from " + n.nodeNumber);
+                        //System.out.println(this.nodeNumber + " EXIT from " + n.nodeNumber);
                         numExited++;
                         break;
                     }
@@ -535,8 +535,12 @@ public class Node {
                 // }
         });
 
+        System.out.println("start Maekawa protocol");
+        long start = System.currentTimeMillis();
         cs.start();
         read.start();
+        long end = System.currentTimeMillis() - start;
+        System.out.println("execution time: " + end + " ms");
 
         try {
             cs.join();
