@@ -259,12 +259,12 @@ public class Node {
     private void csLeave() {
         broadcastMessage(MessageType.RELEASE); //send message informing other processes that CS is no longer in use
         for (Neighbor n : this.qMembers.values()) n.granted = false;
-        requestQueue.remove(new Request(this.nodeNumber, -1)); //remove own request from queue. can use timestamp -1 since equals() only compares nodeNumber, and that is fine because only 1 of this node's requests can be in queue at a time
+        requestQueue.remove(new Request(this.nodeNumber, this.clock)); //remove own request from queue. can use timestamp -1 since equals() only compares nodeNumber, and that is fine because only 1 of this node's requests can be in queue at a time
         Request nextReq = requestQueue.peek();
         System.out.print(this.nodeNumber + " csLeave. Queue after removing own req: ");
         printQueue();
         if (!requestQueue.isEmpty() && nextReq.nodeNumber != this.nodeNumber) {
-            sendMessage(MessageType.GRANT, -1, nextReq.nodeNumber);
+            sendMessage(MessageType.GRANT, this.clock, nextReq.nodeNumber);
             if (this.nodeNumber == 0 && nextReq.nodeNumber == 3) {
                 System.out.println(nextReq.nodeNumber + ": " + this.qMembers.get(nextReq));
             }
@@ -273,7 +273,7 @@ public class Node {
     }
 
     private void broadcastMessage(MessageType type) {
-        broadcastMessage(type, -1);
+        broadcastMessage(type, this.clock);
     }
     private void broadcastMessage(MessageType type, int clock) {
         if (type == MessageType.REQUEST || type == MessageType.RELEASE) {
@@ -304,7 +304,7 @@ public class Node {
     private void attemptExit() {
         for (Neighbor n : this.qMembers.values()) {
             if (n.nodeNumber == this.nodeNumber) continue;
-            n.connection.writeMessage(new Message(MessageType.EXIT, -1));
+            n.connection.writeMessage(new Message(MessageType.EXIT, this.clock));
         }
     }
 
@@ -377,23 +377,23 @@ public class Node {
                             requestQueue.add(newReq);
                             if (oldReq == null) {
                                 //printDebug(newReq.nodeNumber, MessageType.GRANT);
-                                sendMessage(MessageType.GRANT, -1, newReq.nodeNumber); //if only request in queue, grant
+                                sendMessage(MessageType.GRANT, this.clock, newReq.nodeNumber); //if only request in queue, grant
                             }
                             else if (oldReq.compareTo(newReq) > 0) {
                                 if (oldReq.nodeNumber == this.nodeNumber && !canEnter()) { // if own request at top of queue but cannot enter
                                     this.qMembers.get(this.nodeNumber).granted = false;
                                     hasFailed = true;
                                     //printDebug(newReq.nodeNumber, MessageType.GRANT);
-                                    sendMessage(MessageType.GRANT, -1, newReq.nodeNumber);
+                                    sendMessage(MessageType.GRANT, this.clock, newReq.nodeNumber);
                                 }
                                 else if (oldReq.nodeNumber != this.nodeNumber) {
                                     //printDebug(oldReq.nodeNumber, MessageType.INQUIRE);
-                                    sendMessage(MessageType.INQUIRE, -1, oldReq.nodeNumber);
+                                    sendMessage(MessageType.INQUIRE, this.clock, oldReq.nodeNumber);
                                 }
                             }
                             else {
                                 //printDebug(newReq.nodeNumber, MessageType.FAILED);
-                                sendMessage(MessageType.FAILED, -1, newReq.nodeNumber);
+                                sendMessage(MessageType.FAILED, this.clock, newReq.nodeNumber);
                             }
                             break;
                         case GRANT:
@@ -412,14 +412,14 @@ public class Node {
                                 //maybe (as well, not replace above): this.qMembers.get(n.nodeNumber).granted = true;
                             }
                             else {
-                                sendMessage(MessageType.GRANT, -1, requestQueue.peek().nodeNumber);
+                                sendMessage(MessageType.GRANT, this.clock, requestQueue.peek().nodeNumber);
                             }
                             break;
                         case INQUIRE:
                             if (hasFailed) {
                                 n.granted = false;
                                 //printDebug(n.nodeNumber, MessageType.YIELD);
-                                sendMessage(MessageType.YIELD, -1, n.nodeNumber);
+                                sendMessage(MessageType.YIELD, this.clock, n.nodeNumber);
                             }
                             break;
                         case FAILED:
@@ -427,7 +427,7 @@ public class Node {
                             hasFailed = true;
                             if (!requestQueue.isEmpty() && requestQueue.peek().nodeNumber != this.nodeNumber) { //this node has failed, will not obtain ME yet, so yield to previously INQUIREd process
                                 //printDebug(requestQueue.peek().nodeNumber, MessageType.YIELD);
-                                sendMessage(MessageType.GRANT, -1, requestQueue.peek().nodeNumber);
+                                sendMessage(MessageType.GRANT, this.clock, requestQueue.peek().nodeNumber);
                             }
                             break;
                         case EXIT:
