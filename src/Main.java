@@ -6,6 +6,7 @@ public class Main {
         }
         Node n = ConfigParser.parse(args[0]);
         //System.out.println(n.toString());
+        System.out.println("NODE NUM REQS: " + n.numRequests);
         n.establishConnections();
         n.beginProtocol();
         n.closeConnections();
