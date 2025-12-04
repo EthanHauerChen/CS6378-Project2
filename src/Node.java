@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 //import java.util.PriorityQueue;
@@ -263,7 +264,7 @@ public class Node {
         String remoteFile = "/home/6378/Project2/mutex_output";
 
         // Build the repeated nodeNumber string (same line)
-        String repeated = (this.nodeNumber + " ").repeat(10).trim();
+        String repeated = String.join(" ", Collections.nCopies(10, "" + this.nodeNumber));
 
         // Escape it correctly for SSH + remote shell
         String command = String.format(
