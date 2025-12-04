@@ -423,7 +423,7 @@ public class Node {
                                 }
                                 else {
                                     //might have to be a grant message
-                                    sendMessage(MessageType.YIELD, this.clock, topReq.nodeNumber);
+                                    sendMessage(MessageType.GRANT, this.clock, topReq.nodeNumber);
                                 }
                             }
                             //if (this.nodeNumber == 3) 
