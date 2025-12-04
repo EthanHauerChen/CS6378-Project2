@@ -47,7 +47,7 @@ public class Connection {
             //no data available right now
             return null;
         }
-        catch (Exception e) {
+        catch (IOException | ClassNotFoundException e) {
             System.out.println("Something went wrong reading message");
             return null;
         }
