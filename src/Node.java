@@ -20,6 +20,7 @@ public class Node {
     HashMap<Integer, Neighbor> qMembers;
     PriorityBlockingQueue<Request> requestQueue;
     private int clock;
+    private boolean hasFailed;
 
     private class Request implements Comparable {
         int nodeNumber;
@@ -62,6 +63,7 @@ public class Node {
         clock = 0;
         requestQueue = new PriorityBlockingQueue<>();
         this.qMembers.get(this.nodeNumber).granted = true;
+        hasFailed = false;
     }
     private void addQMembers (Neighbor[] members) {
         qMembers = new HashMap<Integer, Neighbor>(members.length);
@@ -262,6 +264,7 @@ public class Node {
     }
 
     private void csLeave() {
+        hasFailed = false;
         broadcastMessage(MessageType.RELEASE); //send message informing other processes that CS is no longer in use
         for (Neighbor n : this.qMembers.values()) n.granted = false;
         requestQueue.remove(new Request(this.nodeNumber, this.clock)); //remove own request from queue. can use timestamp -1 since equals() only compares nodeNumber, and that is fine because only 1 of this node's requests can be in queue at a time
@@ -361,7 +364,6 @@ public class Node {
             read[i] = new Thread(() -> {
                 long start = System.currentTimeMillis();
                 boolean rcvdExit = false;
-                boolean hasFailed = false; //if received a failed message from another quorum member
                 while (!rcvdExit) { 
                     Message msg = readMessage(n);
                     if (msg == null) {
