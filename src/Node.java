@@ -370,6 +370,7 @@ public class Node {
                     System.out.println("interRequestDelay interrupted, proceeding to enter cs again if num requests made has not exceeded maximum");
                 }
             }
+            System.out.println(this.nodeNumber + " finished all cs requests");
             broadcastMessage(MessageType.EXIT);
         });
 
