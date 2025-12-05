@@ -2,9 +2,7 @@
 
 file="$1"
 
-all_valid=true
 line_number=0
-
 while IFS= read -r line; do
     line_number=$((line_number + 1))
 
@@ -16,4 +14,6 @@ while IFS= read -r line; do
 
     # Check if all characters are identical
     if ! echo "$stripped" | grep -Eq '^([0-9])\1*$'; then
-        ech
+        echo "Line $line_number is invalid: $line"
+    fi
+done < "$file"
